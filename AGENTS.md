@@ -42,7 +42,7 @@ sayt_kira/                            git-репозиторий → GitHub Timo
 - Сайт: **https://ulybajsja.online** (домен в Timeweb, DNS Timeweb; `www` → 301 на основной). Запасной вход по IP: https://195.133.73.111. Адреса `*.sslip.io` / `*.nip.io` в РФ режутся по имени — клиентам не давать.
 - Код: `/opt/ulybaysya/app`, служба `ulybaysya` (systemd, пользователь `uly`), Node 24 в `/usr/local/bin`.
 - Данные: `/var/lib/ulybaysya` (база `site.db` + `uploads/`), настройки: `/etc/ulybaysya.env`.
-- HTTPS: Caddy (`/etc/caddy/Caddyfile`), сертификат Let's Encrypt на IP, продлевается сам.
+- HTTPS: Caddy (`/etc/caddy/Caddyfile`), сертификаты Let's Encrypt на домен и на IP, продлеваются сами. **HTTP/3 выключен** (ufw пропускает только TCP 443; с объявленным, но недоступным HTTP/3 Safari на iPhone зависал — `docs/ROADMAP.md` Т11).
 - Вход: только по ключу `~/.ssh/ulybaysya_deploy` — вход по паролю на сервере выключен (`/etc/ssh/sshd_config.d/00-ulybaysya-keys-only.conf`). Ключ на сервере один: потеряли — вход через консоль в панели Timeweb. Пароли в чат не просить и не вводить.
 - С сервера недоступны npm-реестр и nodejs.org — пакеты едут кэшем с Mac (это делает `deploy.sh`).
 
