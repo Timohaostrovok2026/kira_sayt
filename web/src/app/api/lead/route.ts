@@ -1,4 +1,6 @@
+import { after } from "next/server";
 import { getDb } from "@/lib/db";
+import { deliverLead } from "@/lib/leads";
 
 interface LeadBody {
   visitor?: string;
@@ -7,22 +9,6 @@ interface LeadBody {
   total?: number;
   text?: string;
   payload?: unknown;
-}
-
-async function sendTelegram(text: string) {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chat = process.env.TELEGRAM_CHAT_ID;
-  if (!token || !chat) return false;
-  try {
-    const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ chat_id: chat, text, disable_web_page_preview: true }),
-    });
-    return r.ok;
-  } catch {
-    return false;
-  }
 }
 
 export async function POST(req: Request) {
@@ -50,7 +36,8 @@ export async function POST(req: Request) {
       JSON.stringify(b.payload ?? null).slice(0, 20000),
     );
   const id = Number(res.lastInsertRowid);
-  const delivered = await sendTelegram(`🎉 Заявка №${id} с сайта\n\n${text}`);
-  if (delivered) db.prepare("UPDATE leads SET delivered = 1 WHERE id = ?").run(id);
-  return Response.json({ ok: true, id, delivered });
+  // Заявка уже в базе — клиенту отвечаем сразу, в Telegram отправляем после ответа
+  // (с повторами; не дошла — досылает фоновая проверка из instrumentation.ts).
+  after(() => deliverLead(id));
+  return Response.json({ ok: true, id });
 }

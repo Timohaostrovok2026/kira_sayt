@@ -12,7 +12,7 @@ export function LeadsList({ leads }: { leads: Lead[] }) {
       hint={
         lost ? (
           <span className="font-semibold text-rasp-700">
-            {lost} из последних {leads.length} не дошли до Telegram — перезвоните по ним.
+            {lost} из последних {leads.length} не дошли до Telegram. Сайт досылает их каждые 5 минут в течение двух суток — если заявка висит дольше часа, позвоните сами.
           </span>
         ) : (
           "Нажмите на заявку, чтобы увидеть её целиком. Время московское."

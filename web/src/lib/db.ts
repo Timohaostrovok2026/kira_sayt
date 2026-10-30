@@ -7,12 +7,14 @@ import path from "node:path";
 export const DATA_DIR = process.env.DATA_DIR ?? path.join(process.cwd(), "data");
 const dir = DATA_DIR;
 
-let db: DatabaseSync | null = null;
+// Одно соединение на процесс: маршруты и фоновая досылка заявок (instrumentation)
+// собираются в разные бандлы, поэтому держим его на globalThis.
+const g = globalThis as { __siteDb?: DatabaseSync };
 
 export function getDb() {
-  if (db) return db;
+  if (g.__siteDb) return g.__siteDb;
   fs.mkdirSync(dir, { recursive: true });
-  db = new DatabaseSync(path.join(dir, "site.db"));
+  const db = new DatabaseSync(path.join(dir, "site.db"));
   db.exec(`
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS events (
@@ -41,5 +43,7 @@ export function getDb() {
       delivered INTEGER NOT NULL DEFAULT 0
     );
   `);
+  // Кэшируем только готовое соединение: упадёт создание таблиц — следующий вызов попробует снова.
+  g.__siteDb = db;
   return db;
 }
