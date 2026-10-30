@@ -25,14 +25,12 @@ export const metadata: Metadata = {
   applicationName: "Улыбайся",
   // На iPhone с экрана «Домой» открывается без адресной строки, как приложение.
   appleWebApp: { capable: true, title: "Улыбайся", statusBarStyle: "black" },
-  icons: {
-    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
-  },
+  // Иконки и картинка превью — файлами в app/ (favicon.ico, icon.png, apple-icon.png, opengraph-image.jpg).
+  // Поле icons здесь не задавать: с ним Next молча выкидывает файловые иконки и во вкладке пусто.
   openGraph: {
     type: "website",
     locale: "ru_RU",
     siteName: "Улыбайся",
-    images: ["/img/photos/ded-moroz.webp"],
   },
 };
 

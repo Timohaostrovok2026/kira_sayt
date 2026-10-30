@@ -159,7 +159,7 @@ export function InstallPrompt() {
       <div className="rounded-[22px] border border-white/10 bg-rasp-950/90 p-3 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <Image
-            src="/icons/icon-192.png"
+            src="/icons/uly-192.png"
             alt=""
             width={44}
             height={44}

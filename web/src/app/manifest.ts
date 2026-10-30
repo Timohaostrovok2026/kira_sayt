@@ -17,21 +17,21 @@ export default function manifest(): MetadataRoute.Manifest {
     theme_color: "#220006",
     categories: ["entertainment", "lifestyle"],
     icons: [
-      { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
-      { src: "/icons/icon-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+      { src: "/icons/uly-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+      { src: "/icons/uly-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+      { src: "/icons/uly-maskable-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
     ],
     shortcuts: [
       {
         name: "Собрать праздник",
         short_name: "Собрать",
         url: "/sobrat",
-        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: "/icons/uly-192.png", sizes: "192x192", type: "image/png" }],
       },
       {
         name: "Корзина",
         url: "/korzina",
-        icons: [{ src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" }],
+        icons: [{ src: "/icons/uly-192.png", sizes: "192x192", type: "image/png" }],
       },
     ],
   };

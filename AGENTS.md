@@ -107,6 +107,7 @@ sayt_kira/                            git-репозиторий → GitHub Timo
 - `params` и `searchParams` — это Promise, их надо `await`.
 - `useSearchParams` в клиентском компоненте — только внутри `<Suspense>`.
 - В серверных компонентах не вызывать `new Date()` вне кэша или динамической зоны.
+- Иконки и картинка превью — файлами в `src/app/` (`favicon.ico`, `icon.png`, `apple-icon.png`, `opengraph-image.jpg`). Поле `icons` в `metadata` не задавать: с ним Next молча выкидывает файловые иконки (так во вкладке была серая «U»).
 - Server actions ограничены 1 МБ — загрузка фото идёт через route handler `/admin/upload`.
 
 ### Аналитика
