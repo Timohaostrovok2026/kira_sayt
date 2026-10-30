@@ -33,9 +33,9 @@ pattern+='|git +reset +--hard|git +clean +-[a-zA-Z]*f|git +branch +-D|git +check
 pattern+='|find +.*-delete|mkfs|dd +if='
 if printf '%s' "$bare" | grep -Eiq "$pattern"; then block "необратимая команда"; fi
 
-# Проект только локальный: никаких push и публикаций (AGENTS.md §5).
-if printf '%s' "$bare" | grep -Eiq '(^|[;&|( ])git +push|gh +repo +create'; then
-  block "публикация кода без прямой просьбы владельца"; fi
+# Код живёт в закрытом репозитории на GitHub: обычный push можно, перезапись истории и новые репозитории — нет (AGENTS.md §5).
+if printf '%s' "$bare" | grep -Eiq 'git +push +.*(--force|--mirror|--delete|-f( |$)|[ ]\+[^ ]+|[ ]:[^ ]+)|gh +repo +(create|delete|edit)'; then
+  block "перезапись истории или изменение репозиториев на GitHub"; fi
 
 # Секреты: .env*, /etc/ulybaysya.env, ключи SSH.
 if printf '%s' "$bare_env" | grep -Eiq '(cat|less|head|tail|more|bat|grep|sed|awk|cp|scp) +[^;&|]*(\.env|ulybaysya\.env|\.ssh/)'; then
