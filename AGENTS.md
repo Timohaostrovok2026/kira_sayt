@@ -43,7 +43,7 @@ sayt_kira/                            git-репозиторий → GitHub Timo
 - Код: `/opt/ulybaysya/app`, служба `ulybaysya` (systemd, пользователь `uly`), Node 24 в `/usr/local/bin`.
 - Данные: `/var/lib/ulybaysya` (база `site.db` + `uploads/`), настройки: `/etc/ulybaysya.env`.
 - HTTPS: Caddy (`/etc/caddy/Caddyfile`), сертификат Let's Encrypt на IP, продлевается сам.
-- Вход: только по ключу `~/.ssh/ulybaysya_deploy`. Пароли в чат не просить и не вводить.
+- Вход: только по ключу `~/.ssh/ulybaysya_deploy` — вход по паролю на сервере выключен (`/etc/ssh/sshd_config.d/00-ulybaysya-keys-only.conf`). Ключ на сервере один: потеряли — вход через консоль в панели Timeweb. Пароли в чат не просить и не вводить.
 - С сервера недоступны npm-реестр и nodejs.org — пакеты едут кэшем с Mac (это делает `deploy.sh`).
 
 ---
