@@ -1,0 +1,359 @@
+@import "tailwindcss";
+
+/*
+  Дизайн-система «Улыбайся».
+  Один фирменный цвет — малиновый. Тёмная «сцена» повторяет фон студийных фото героев,
+  поэтому фото сливаются со страницей. Светлые разделы — для чтения.
+*/
+
+@theme {
+  --color-rasp-50: #fff4f7;
+  --color-rasp-100: #ffe4ec;
+  --color-rasp-200: #ffc6d7;
+  --color-rasp-300: #ff94b5;
+  --color-rasp-400: #f8578a;
+  --color-rasp-500: #e8185f;
+  --color-rasp-600: #c80f4e;
+  --color-rasp-700: #9c0a3b;
+  --color-rasp-800: #6e0628;
+  --color-rasp-900: #42020f;
+  --color-rasp-950: #220006;
+
+  --color-ink: #23070f;
+  --color-ink-soft: #6c4a55;
+  --color-paper: #fff8fa;
+  --color-line: rgb(35 7 15 / 0.1);
+  --color-star: #ffc23d;
+
+  --font-display: var(--font-unbounded), system-ui, sans-serif;
+  --font-sans: var(--font-onest), system-ui, sans-serif;
+
+  --radius-card: 24px;
+  --radius-pill: 999px;
+
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --animate-pop: pop 0.45s var(--ease-spring);
+  --animate-rise: rise 0.7s var(--ease-out) both;
+  --animate-marquee: marquee 40s linear infinite;
+
+  @keyframes pop {
+    0% { transform: scale(0.9); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+  }
+  @keyframes rise {
+    0% { transform: translateY(24px); opacity: 0; }
+    100% { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes marquee {
+    to { transform: translateX(-50%); }
+  }
+  @keyframes word-in {
+    0% { opacity: 0; transform: translateY(0.45em); }
+    100% { opacity: 1; transform: none; }
+  }
+  @keyframes hero-in {
+    0% { opacity: 0; transform: translateY(48px) scale(0.92); }
+    100% { opacity: 1; transform: none; }
+  }
+  @keyframes snow-fall {
+    0% { transform: translate3d(0, 0, 0); }
+    50% { transform: translate3d(var(--sway), 55vh, 0); }
+    100% { transform: translate3d(0, 110vh, 0); }
+  }
+}
+
+:root {
+  --header-h: 64px;
+  --bottom-nav-h: 68px;
+  color-scheme: light;
+}
+
+html {
+  /* clip, а не hidden: не ломает position: sticky */
+  overflow-x: clip;
+  scroll-behavior: smooth;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: 17px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--color-rasp-500);
+  color: white;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-rasp-400);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+@layer components {
+  /* Контейнер: 16px поля на телефоне, 24px дальше. */
+  .wrap {
+    width: 100%;
+    max-width: 1240px;
+    margin-inline: auto;
+    padding-inline: 16px;
+  }
+  @media (min-width: 768px) {
+    .wrap { padding-inline: 32px; }
+  }
+
+  /* Тёмная малиновая сцена — как фон на фото героев. */
+  .stage {
+    background:
+      radial-gradient(120% 90% at 70% 35%, #a10c35 0%, #6e0628 45%, #3a020f 80%, #220006 100%);
+    color: white;
+  }
+  .stage-soft {
+    background: radial-gradient(140% 100% at 50% 0%, #8e0a31 0%, #55031c 55%, #2a0108 100%);
+    color: white;
+  }
+
+  /* Заголовки: Unbounded, обычный регистр, плотный интерлиньяж. */
+  .h-hero {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(36px, 7.4vw, 76px);
+    line-height: 1.02;
+    letter-spacing: -0.025em;
+    text-wrap: balance;
+  }
+  .h-section {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: clamp(28px, 5vw, 48px);
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .h-card {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 19px;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
+  }
+  .eyebrow {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .lead {
+    font-size: clamp(17px, 2.2vw, 20px);
+    line-height: 1.5;
+  }
+
+  /* Кнопки */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 48px;
+    padding: 0 22px;
+    border-radius: var(--radius-pill);
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 1;
+    white-space: nowrap;
+    transition: transform 0.2s var(--ease-spring), background-color 0.2s, box-shadow 0.2s, color 0.2s;
+    cursor: pointer;
+    user-select: none;
+  }
+  .btn:active { transform: scale(0.96); }
+  .btn-lg { min-height: 58px; padding: 0 30px; font-size: 17px; }
+  .btn-sm { min-height: 40px; padding: 0 16px; font-size: 15px; }
+  .btn-primary {
+    background: var(--color-rasp-500);
+    background-image: linear-gradient(180deg, rgb(255 255 255 / 0.14), transparent 60%);
+    color: white;
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.25), 0 10px 30px -10px rgb(232 24 95 / 0.7);
+  }
+  .btn-primary:hover { background-color: var(--color-rasp-600); }
+  .btn-light {
+    background: white;
+    color: var(--color-rasp-700);
+    box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.45);
+  }
+  .btn-light:hover { background: var(--color-rasp-50); }
+  .btn-ghost {
+    background: transparent;
+    color: currentColor;
+    box-shadow: inset 0 0 0 2px currentColor;
+  }
+  .btn-ghost:hover { background: rgb(255 255 255 / 0.08); }
+  .btn-soft {
+    background: var(--color-rasp-100);
+    color: var(--color-rasp-700);
+  }
+  .btn-soft:hover { background: var(--color-rasp-200); }
+  .btn[aria-pressed="true"].btn-soft {
+    background: var(--color-ink);
+    color: white;
+  }
+
+  /* Фильтры-чипсы */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 0 16px;
+    border-radius: var(--radius-pill);
+    background: white;
+    color: var(--color-ink);
+    font-weight: 600;
+    font-size: 15px;
+    white-space: nowrap;
+    box-shadow: inset 0 0 0 1.5px var(--color-line);
+    transition: background-color 0.15s, color 0.15s, box-shadow 0.15s;
+    cursor: pointer;
+  }
+  .chip:hover { box-shadow: inset 0 0 0 1.5px var(--color-rasp-300); }
+  .chip[aria-pressed="true"] {
+    background: var(--color-rasp-500);
+    color: white;
+    box-shadow: none;
+  }
+  .stage .chip {
+    background: rgb(255 255 255 / 0.1);
+    color: white;
+    box-shadow: inset 0 0 0 1.5px rgb(255 255 255 / 0.18);
+  }
+  .stage .chip[aria-pressed="true"] {
+    background: white;
+    color: var(--color-rasp-700);
+  }
+
+  /* Карточка на светлом фоне */
+  .card {
+    background: white;
+    border-radius: var(--radius-card);
+    box-shadow: 0 0 0 1px rgb(110 6 40 / 0.04), 0 2px 4px -2px rgb(110 6 40 / 0.08), 0 16px 36px -20px rgb(110 6 40 / 0.4);
+  }
+
+  /* Горизонтальная лента со свайпом и снапом */
+  .rail {
+    display: grid;
+    grid-auto-flow: column;
+    gap: 12px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: 16px;
+    padding-inline: 16px;
+    margin-inline: -16px;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+  .rail::-webkit-scrollbar { display: none; }
+  .rail > * { scroll-snap-align: start; }
+  @media (min-width: 768px) {
+    .rail { gap: 16px; scroll-padding-inline: 32px; padding-inline: 32px; margin-inline: -32px; }
+  }
+
+  .price {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+
+  /*
+    Появление при скролле: .reveal + data-shown от <Motion />.
+    Прячем только когда скрипты загрузились (html[data-reveal]) — без JS всё видно сразу.
+  */
+  .reveal { transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out); }
+  html[data-reveal] .reveal:not([data-shown]) { opacity: 0; transform: translateY(24px); }
+  /* Лесенка: задержка --d только на время появления. Потом Motion ставит data-shown="done" — наведение без задержки. */
+  .reveal[data-shown="true"] { transition-delay: var(--d, 0ms); }
+
+  /* Заголовки по словам: splitWords() + --i. В .reveal ждут появления блока, в .split-now — играют сразу. */
+  .split-word { display: inline-block; }
+  .reveal .split-word { transition: opacity 0.6s var(--ease-out), transform 0.7s var(--ease-out); transition-delay: calc(var(--i) * 55ms + 80ms); }
+  html[data-reveal] .reveal-words:not([data-shown]) { opacity: 1; transform: none; }
+  html[data-reveal] .reveal:not([data-shown]) .split-word { opacity: 0; transform: translateY(0.45em); }
+  .split-now .split-word { animation: word-in 0.7s var(--ease-out) both; animation-delay: calc(var(--i) * 70ms + 120ms); }
+
+  /* Глубина: карточка чуть приподнимается при наведении */
+  .lift { transition: transform 0.35s var(--ease-out), box-shadow 0.35s var(--ease-out), opacity 0.7s var(--ease-out); }
+  @media (hover: hover) {
+    .lift:hover { transform: translateY(-4px); box-shadow: 0 1px 0 rgb(35 7 15 / 0.04), 0 24px 48px -22px rgb(110 6 40 / 0.45); }
+  }
+
+  /* 3D-наклон за мышкой ([data-tilt] + <Motion />), только ноутбук */
+  @media (hover: hover) and (pointer: fine) {
+    [data-tilt] {
+      transform: perspective(900px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+      transition: transform 0.6s var(--ease-out), box-shadow 0.35s var(--ease-out), opacity 0.7s var(--ease-out);
+    }
+    [data-tilt][data-tilting] { transition: transform 0.12s linear, box-shadow 0.35s var(--ease-out), opacity 0.7s var(--ease-out); }
+    /* Блик следует за курсором */
+    [data-tilt]::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      z-index: 5;
+      border-radius: inherit;
+      pointer-events: none;
+      background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.22), transparent 55%);
+      opacity: 0;
+      transition: opacity 0.35s;
+    }
+    [data-tilt][data-tilting]::after { opacity: 1; }
+  }
+
+  /* Лента, которая сама медленно едет (AutoRail): без снапа, иначе браузер дёргает её назад */
+  .rail-auto { scroll-snap-type: none; }
+
+  /* Стеклянная плашка на сцене */
+  .glass {
+    background: linear-gradient(160deg, rgb(255 255 255 / 0.12), rgb(255 255 255 / 0.04));
+    box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.14), 0 20px 50px -30px rgb(0 0 0 / 0.6);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+
+  /* Снег в новогодний сезон: медленно, мало хлопьев, только на первом экране */
+  .snowflake {
+    position: absolute;
+    top: -12px;
+    border-radius: 999px;
+    background: white;
+    pointer-events: none;
+    animation: snow-fall var(--d) linear var(--delay) infinite;
+  }
+
+  .no-scrollbar { scrollbar-width: none; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+
+  /* Отступ под нижнюю навигацию на телефоне */
+  .pb-nav { padding-bottom: calc(var(--bottom-nav-h) + env(safe-area-inset-bottom, 0px)); }
+  @media (min-width: 1024px) { .pb-nav { padding-bottom: 0; } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  *, *::before, *::after { animation-delay: 0s !important; }
+  .snowflake { display: none; }
+  /* Лента не едет — её бесшовная копия не нужна */
+  .rail-copy { display: none !important; }
+}

@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "ulybaysya",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "web", "run", "dev", "--", "--port", "3100"],
+      "port": 3100
+    },
+    {
+      "name": "ulybaysya-prod",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "web", "run", "start", "--", "--port", "3200"],
+      "port": 3200
+    }
+  ]
+}

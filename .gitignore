@@ -1,0 +1,20 @@
+# Исходники заказчика (тяжёлые фото) и черновики — не в git
+/materials/
+/scratch/
+
+# Секреты: только шаблон
+.env*
+!.env.example
+
+# Сайт: зависимости, сборка, локальная база
+/web/node_modules/
+/web/.next/
+/web/data/
+/web/*.tsbuildinfo
+/web/next-env.d.ts
+
+# Локальные настройки Claude и его рабочие копии
+/.claude/settings.local.json
+/.claude/worktrees/
+
+.DS_Store
