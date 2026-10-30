@@ -33,7 +33,7 @@ pattern+='|git +reset +--hard|git +clean +-[a-zA-Z]*f|git +branch +-D|git +check
 pattern+='|find +.*-delete|mkfs|dd +if='
 if printf '%s' "$bare" | grep -Eiq "$pattern"; then block "необратимая команда"; fi
 
-# Код живёт в закрытом репозитории на GitHub: обычный push можно, перезапись истории и новые репозитории — нет (AGENTS.md §5).
+# Код живёт в публичном репозитории на GitHub: обычный push можно, перезапись истории и новые репозитории — нет (AGENTS.md §5).
 if printf '%s' "$bare" | grep -Eiq 'git +push +.*(--force|--mirror|--delete|-f( |$)|[ ]\+[^ ]+|[ ]:[^ ]+)|gh +repo +(create|delete|edit)'; then
   block "перезапись истории или изменение репозиториев на GitHub"; fi
 
