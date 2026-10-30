@@ -2,6 +2,7 @@ import "server-only";
 import { getDb } from "@/lib/db";
 import { mskDateTime } from "@/lib/stats/period";
 import { LATE_MS, RESEND_EVERY_MS, RESEND_WINDOW_MS, leadMessage, withRetries } from "@/data/notify";
+import { ADMIN_LEADS_LIMIT, leadStatus, type AdminLead, type LeadStatus } from "@/data/leads";
 
 // Состояние на globalThis, потому что маршрут /api/lead и фоновая досылка
 // (instrumentation) — разные бандлы одного процесса.
@@ -73,4 +74,37 @@ export function startResendLoop() {
   g.__leadsLoop = setInterval(tick, RESEND_EVERY_MS);
   g.__leadsLoop.unref();
   setTimeout(tick, 30_000).unref();
+}
+
+/* ---------- Экран «Заявки» в админке ---------- */
+
+const LEAD_COLS = "id, ts, name, phone, total, text, delivered, status, status_ts";
+
+function toAdminLead(x: Record<string, unknown>): AdminLead {
+  const ts = Number(x.ts);
+  return {
+    id: Number(x.id),
+    ts,
+    when: mskDateTime(ts),
+    name: String(x.name ?? ""),
+    phone: String(x.phone ?? ""),
+    total: Number(x.total) || 0,
+    text: String(x.text ?? ""),
+    delivered: Number(x.delivered) === 1,
+    status: leadStatus(x.status),
+    statusWhen: x.status_ts == null ? null : mskDateTime(Number(x.status_ts)),
+  };
+}
+
+export function listLeads(limit = ADMIN_LEADS_LIMIT): AdminLead[] {
+  const rows = getDb().prepare(`SELECT ${LEAD_COLS} FROM leads ORDER BY id DESC LIMIT ?`).all(limit) as Record<string, unknown>[];
+  return rows.map(toAdminLead);
+}
+
+/** Меняет статус и возвращает обновлённую заявку; null — такой заявки нет (удалили). */
+export function updateLeadStatus(id: number, status: LeadStatus): AdminLead | null {
+  const db = getDb();
+  const r = db.prepare("UPDATE leads SET status = ?, status_ts = ? WHERE id = ?").run(status, Date.now(), id);
+  if (!Number(r.changes)) return null;
+  return toAdminLead(db.prepare(`SELECT ${LEAD_COLS} FROM leads WHERE id = ?`).get(id) as Record<string, unknown>);
 }

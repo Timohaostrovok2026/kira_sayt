@@ -4,6 +4,7 @@ import { AdminApp, type TabId } from "@/components/admin/AdminApp";
 import { LoginForm } from "@/components/stats/LoginForm";
 import { isAuthed, statsPassword } from "@/lib/auth";
 import { readContent } from "@/lib/content/store";
+import { listLeads } from "@/lib/leads";
 
 /*
   Админка Кирилла. Тот же пароль и кука, что у /stats.
@@ -40,7 +41,7 @@ async function Gate({ searchParams }: { searchParams: SP }) {
     );
   }
   const tab = (await searchParams).tab;
-  return <AdminApp initial={readContent()} initialTab={(typeof tab === "string" ? tab : "programs") as TabId} />;
+  return <AdminApp initial={readContent()} initialLeads={listLeads()} initialTab={(typeof tab === "string" ? tab : "leads") as TabId} />;
 }
 
 export default function AdminPage(props: { searchParams: SP }) {

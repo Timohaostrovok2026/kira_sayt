@@ -5,6 +5,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { BarChart3, CircleAlert, CircleCheck, ExternalLink, Gift, LogOut, Settings2, Sparkles } from "lucide-react";
 import { logout } from "@/app/stats/actions";
 import type { AdminResult } from "@/app/admin/actions";
+import { countByStatus, lostAndNew, type AdminLead } from "@/data/leads";
 import { EXTRA_GROUPS, KINDS, ageText, buildCatalog } from "@/data/catalog";
 import type { ContentAll } from "@/lib/content/store";
 import { money } from "@/lib/format";
@@ -12,9 +13,11 @@ import { CostumeEditor, ExtraEditor, PackageEditor, ProgramEditor } from "./edit
 import { ItemList } from "./ItemList";
 import { CategoriesButton } from "./Categories";
 import { GalleryTab, TextsTab } from "./SiteTabs";
+import { LeadsTab } from "./LeadsTab";
 import { AdminCtx, useAdmin, type AdminApi } from "./ui";
 
 const TABS = [
+  { id: "leads", label: "Заявки" },
   { id: "programs", label: "Программы" },
   { id: "extras", label: "Шоу и допы" },
   { id: "packages", label: "Пакеты" },
@@ -26,9 +29,11 @@ export type TabId = (typeof TABS)[number]["id"];
 
 type Editing = { id: string | null; preset?: string } | null;
 
-export function AdminApp({ initial, initialTab }: { initial: ContentAll; initialTab: TabId }) {
+export function AdminApp({ initial, initialLeads, initialTab }: { initial: ContentAll; initialLeads: AdminLead[]; initialTab: TabId }) {
   const [data, setData] = useState(initial);
-  const [tab, setTab] = useState<TabId>(TABS.some((t) => t.id === initialTab) ? initialTab : "programs");
+  const [leads, setLeads] = useState(initialLeads);
+  // Заявки — первая вкладка: админку открывают прежде всего ради них.
+  const [tab, setTab] = useState<TabId>(TABS.some((t) => t.id === initialTab) ? initialTab : "leads");
   const [editing, setEditing] = useState<Editing>(null);
   const [toast, setToast] = useState<{ text: string; error: boolean; at: number } | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -66,6 +71,7 @@ export function AdminApp({ initial, initialTab }: { initial: ContentAll; initial
   };
 
   const counts: Record<TabId, number | null> = {
+    leads: countByStatus(leads).new,
     programs: data.catalog.programs.length,
     extras: data.catalog.extras.length,
     packages: data.catalog.packages.length,
@@ -73,6 +79,8 @@ export function AdminApp({ initial, initialTab }: { initial: ContentAll; initial
     texts: null,
     gallery: data.site.gallery.length,
   };
+
+  const lost = lostAndNew(leads).length;
 
   return (
     <AdminCtx.Provider value={api}>
@@ -87,11 +95,14 @@ export function AdminApp({ initial, initialTab }: { initial: ContentAll; initial
               <span className="block text-[12.5px] font-semibold text-ink-soft">Админка</span>
             </span>
           </Link>
-          <a href="/" target="_blank" rel="noopener" className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-ink-soft hover:bg-rasp-50 hover:text-ink">
-            <ExternalLink size={15} aria-hidden /> Сайт
+          <a href="/" target="_blank" rel="noopener" aria-label="Сайт" title="Сайт" className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-ink-soft hover:bg-rasp-50 hover:text-ink">
+            <ExternalLink size={15} aria-hidden />
+            <span className="hidden sm:inline">Сайт</span>
           </a>
-          <Link href="/stats" className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-ink-soft hover:bg-rasp-50 hover:text-ink">
-            <BarChart3 size={15} aria-hidden /> Статистика
+          {/* На телефоне — только иконки: с подписями шапка шире 390 px. */}
+          <Link href="/stats" aria-label="Статистика" title="Статистика" className="inline-flex min-h-10 items-center gap-1.5 rounded-full px-3 text-[13px] font-semibold text-ink-soft hover:bg-rasp-50 hover:text-ink">
+            <BarChart3 size={15} aria-hidden />
+            <span className="hidden sm:inline">Статистика</span>
           </Link>
           <form action={logout}>
             <input type="hidden" name="next" value="/admin" />
@@ -106,12 +117,18 @@ export function AdminApp({ initial, initialTab }: { initial: ContentAll; initial
             <button key={t.id} type="button" className="chip shrink-0" aria-pressed={tab === t.id} onClick={() => pickTab(t.id)}>
               {t.label}
               {counts[t.id] != null && <span className={`text-[13px] tabular-nums ${tab === t.id ? "text-white/75" : "text-ink-soft"}`}>{counts[t.id]}</span>}
+              {t.id === "leads" && lost > 0 && (
+                <span className={`h-2.5 w-2.5 rounded-full ${tab === "leads" ? "bg-white" : "bg-rasp-500"}`} title="Есть заявки, не дошедшие до Telegram">
+                  <span className="sr-only">есть не дошедшие</span>
+                </span>
+              )}
             </button>
           ))}
         </nav>
       </div>
 
       <main className="wrap pb-28 pt-5">
+        {tab === "leads" && <LeadsTab leads={leads} setLeads={setLeads} />}
         {tab === "programs" && <ProgramsTab onEdit={setEditing} />}
         {tab === "extras" && <ExtrasTab onEdit={setEditing} />}
         {tab === "packages" && <PackagesTab onEdit={setEditing} />}

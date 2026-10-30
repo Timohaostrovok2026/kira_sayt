@@ -16,11 +16,11 @@ test("досланная с опозданием заявка помечена �
   );
 });
 
-test("длинная заявка обрезается под лимит Telegram и отсылает в /stats", () => {
+test("длинная заявка обрезается под лимит Telegram и отсылает в админку", () => {
   const m = leadMessage(7, "я".repeat(6000));
   assert.ok(m.length <= TELEGRAM_MAX);
   assert.ok(m.startsWith("🎉 Заявка №7 с сайта"));
-  assert.ok(m.endsWith("целиком в /stats"));
+  assert.ok(m.endsWith(TAIL));
 });
 
 test("заявка ровно на лимите не обрезается", () => {
@@ -66,7 +66,7 @@ test("все попытки неудачны — false, попыток ровн�
 
 // Дыры, найденные «ломанием» (code-breaker, 2026-10-30): границы обрезки, эмодзи, порядок пауз, значения по умолчанию.
 const head = (id: number) => `🎉 Заявка №${id} с сайта\n\n`;
-const TAIL = "целиком в /stats";
+const TAIL = "целиком в админке, «Заявки»";
 
 test("на символ длиннее лимита — уже обрезается", () => {
   const text = "а".repeat(TELEGRAM_MAX - head(1).length + 1);

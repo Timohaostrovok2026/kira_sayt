@@ -143,9 +143,11 @@ const CLICK_PREFIX: [string, (rest: string) => string][] = [
   ["builder_next_", (r) => `Конструктор: «Дальше» с шага ${r}`],
   ["pakety_step_", (r) => `Пакеты: шаг ${r}`],
   ["faq_", (r) => `Вопрос: «${r}…»`],
-  ["lead_ok_", (r) => `После заявки: ${r === "wa" ? "WhatsApp" : r === "tg" ? "Telegram" : r}`],
-  ["lead_fail_", (r) => `Ошибка заявки: ${r === "wa" ? "WhatsApp" : r === "tg" ? "Telegram" : r}`],
+  ["lead_ok_", (r) => `После заявки: ${LEAD_VIA[r] ?? r}`],
+  ["lead_fail_", (r) => `Ошибка заявки: ${LEAD_VIA[r] ?? r}`],
 ];
+
+const LEAD_VIA: Record<string, string> = { tg: "Telegram", wa: "WhatsApp", call: "«Позвонить»" };
 
 const NAV_LABEL: Record<string, string> = {
   "/sobrat": "Собрать праздник",

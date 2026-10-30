@@ -6,7 +6,7 @@ export const TELEGRAM_MAX = 4000;
 /** Сколько ждать перед каждой попыткой: Telegram из РФ отвечает через раз. */
 export const RETRY_DELAYS_MS = [0, 2_000, 5_000];
 
-/** Недоставленные заявки досылаем в фоне, но не старше двух суток — дальше звонят по /stats. */
+/** Недоставленные заявки досылаем в фоне, но не старше двух суток — дальше звонят по экрану «Заявки» в админке. */
 export const RESEND_WINDOW_MS = 48 * 3600_000;
 export const RESEND_EVERY_MS = 5 * 60_000;
 
@@ -16,7 +16,7 @@ export const LATE_MS = 5 * 60_000;
 /** `late` — время заявки (МСК), если она досылается с опозданием. */
 export function leadMessage(id: number, text: string, late?: string): string {
   const head = `🎉 Заявка №${id} с сайта\n${late ? `⏰ Дошла с опозданием — отправлена ${late}\n` : ""}\n`;
-  const tail = "\n\n… заявка длинная — целиком в /stats";
+  const tail = "\n\n… заявка длинная — целиком в админке, «Заявки»";
   // Битые эмодзи (одиночные суррогаты) Telegram не принимает — заменяем на «�».
   const full = head + text.toWellFormed();
   if (full.length <= TELEGRAM_MAX) return full;

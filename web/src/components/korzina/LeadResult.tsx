@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeft, Check, Copy, MessageCircle, PartyPopper, Send, TriangleAlert } from "lucide-react";
+import { ArrowLeft, Check, Copy, MessageCircle, PartyPopper, Phone, Send, TriangleAlert } from "lucide-react";
 import { useSite } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
 import { copyText, telegramLink, whatsappLink } from "./lead";
 
 export type LeadResultData = { ok: true; id: number; text: string; total: number } | { ok: false; text: string; total: number };
 
+/** Мессенджеры с готовым текстом и звонок: WhatsApp в РФ работает плохо, звонок доходит всегда. */
 function Messengers({ text, place }: { text: string; place: string }) {
   const { contacts } = useSite();
   return (
@@ -30,6 +31,11 @@ function Messengers({ text, place }: { text: string; place: string }) {
         className="btn btn-lg w-full bg-ink text-white hover:bg-ink/90"
       >
         <MessageCircle size={20} /> WhatsApp
+      </a>
+      {/* Клик по tel: аналитика ловит сама (contact, via=phone) — data-track только чтобы отличить это место. */}
+      <a href={`tel:${contacts.phoneRaw}`} data-track={`${place}_call`} className="btn btn-lg btn-soft w-full sm:col-span-2">
+        {/* Номер — только на широком экране: на телефоне звонит само нажатие, а с номером кнопка шире карточки на 375–390 px. */}
+        <Phone size={20} /> Позвонить <span className="hidden tabular-nums sm:inline">{contacts.phone}</span>
       </a>
     </div>
   );
@@ -55,7 +61,6 @@ function CopyButton({ text }: { text: string }) {
 }
 
 export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => void }) {
-  const { contacts } = useSite();
   if (r.ok) {
     // В мессенджер — с номером заявки, чтобы менеджер сразу её нашёл.
     const msg = `Заявка №${r.id} с сайта.\n\n${r.text}`;
@@ -76,7 +81,7 @@ export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => voi
 
         <div className="card mx-auto mt-8 max-w-xl p-5">
           <p className="font-display text-[18px] font-semibold">Ускорить</p>
-          <p className="mt-1 mb-4 text-[15px] text-ink-soft">Напишите сами — текст заявки уже вставлен.</p>
+          <p className="mt-1 mb-4 text-[15px] text-ink-soft">Напишите сами — текст заявки уже вставлен. Или позвоните и назовите номер заявки.</p>
           <Messengers text={msg} place="lead_ok" />
         </div>
 
@@ -104,12 +109,6 @@ export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => voi
       <div className="card mx-auto mt-8 flex max-w-xl flex-col gap-3 p-5">
         <Messengers text={r.text} place="lead_fail" />
         <CopyButton text={r.text} />
-        <p className="text-center text-[14px] text-ink-soft">
-          Или позвоните:{" "}
-          <a href={`tel:${contacts.phoneRaw}`} className="font-bold text-rasp-600 underline-offset-2 hover:underline">
-            {contacts.phone}
-          </a>
-        </p>
       </div>
 
       <details className="mx-auto mt-4 max-w-xl rounded-2xl bg-white/70 p-4 ring-1 ring-line">

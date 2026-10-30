@@ -16,6 +16,7 @@ export function getDb() {
   fs.mkdirSync(dir, { recursive: true });
   const db = new DatabaseSync(path.join(dir, "site.db"));
   db.exec(`
+    PRAGMA busy_timeout = 5000;
     PRAGMA journal_mode = WAL;
     CREATE TABLE IF NOT EXISTS events (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,6 +44,26 @@ export function getDb() {
       delivered INTEGER NOT NULL DEFAULT 0
     );
   `);
+  // Статус заявки для экрана «Заявки» (2026-10-30). ALTER только если колонки ещё нет — миграция идемпотентна,
+  // старые заявки получают «new». Базу открывает и `next build` рядом с работающей службой (deploy.sh),
+  // поэтому выше busy_timeout, а «колонку уже добавил соседний процесс» — не ошибка.
+  const cols = new Set((db.prepare("PRAGMA table_info(leads)").all() as { name: string }[]).map((c) => c.name));
+  const addColumn = (name: string, def: string) => {
+    if (cols.has(name)) return;
+    try {
+      db.exec(`ALTER TABLE leads ADD COLUMN ${name} ${def}`);
+    } catch (e) {
+      if (!String(e).includes("duplicate column")) throw e;
+    }
+  };
+  try {
+    addColumn("status", "TEXT NOT NULL DEFAULT 'new'");
+    addColumn("status_ts", "INTEGER");
+  } catch (e) {
+    // Не кэшируем и закрываем: иначе каждый следующий вызов открывал бы ещё одно соединение.
+    db.close();
+    throw e;
+  }
   // Кэшируем только готовое соединение: упадёт создание таблиц — следующий вызов попробует снова.
   g.__siteDb = db;
   return db;
