@@ -18,6 +18,12 @@
       "runtimeExecutable": "env",
       "runtimeArgs": ["DATA_DIR=/Users/cheif/sayt_kira/scratch/video/data", "STATS_PASSWORD=uly-dev", "TELEGRAM_BOT_TOKEN=", "TELEGRAM_CHAT_ID=", "NEXT_PUBLIC_YM_ID=", "npm", "--prefix", "web", "run", "start", "--", "--port", "3300"],
       "port": 3300
+    },
+    {
+      "name": "kirill-artifact",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-I", "-m", "http.server", "3400", "--bind", "127.0.0.1", "--directory", "scratch/kirill-artifact-2026-10-31"],
+      "port": 3400
     }
   ]
 }
