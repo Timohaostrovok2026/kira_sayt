@@ -1,10 +1,12 @@
 "use client";
 
+import { Accent } from "@/components/Accent";
 import { Photo } from "@/components/Photo";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { Search, SearchX, X } from "lucide-react";
-import { useCatalog } from "@/lib/catalog-context";
+import { Search, SearchX, Send, X } from "lucide-react";
+import { useCatalog, useSite } from "@/lib/catalog-context";
+import { telegramLink } from "@/components/korzina/lead";
 import { normQuery, plural } from "@/lib/format";
 import { track } from "@/lib/track";
 import { HeroCard } from "./HeroCard";
@@ -34,6 +36,7 @@ function UrlParams({ onRead }: { onRead: (cat: string | null, q: string | null) 
 
 export function CostumesCatalog() {
   const { costumes, costumeCats, costumeImg, costumeById } = useCatalog();
+  const { contacts } = useSite();
   /** Нормализованный текст для поиска: имя + категория + описание. */
   const hay = useMemo(() => costumes.map((c) => normQuery(`${c.name} ${c.cat} ${c.t ?? ""}`)), [costumes]);
   const rounded = costumes.length >= 20 ? `${Math.floor(costumes.length / 10) * 10}+` : String(costumes.length);
@@ -140,7 +143,9 @@ export function CostumesCatalog() {
         <div className="wrap relative grid grid-cols-[minmax(0,1fr)] items-center gap-8 pb-8 pt-8 md:pb-12 md:pt-14 lg:grid-cols-[minmax(0,1fr)_auto]">
           <div className="min-w-0 max-w-2xl">
             <p className="eyebrow mb-3 text-rasp-300">Костюмы и герои</p>
-            <h1 className="h-hero text-[clamp(32px,7vw,68px)]">{rounded} героев для вашего праздника</h1>
+            <h1 className="h-hero text-[clamp(32px,7vw,68px)]">
+              {rounded} героев для вашего <Accent>праздника</Accent>
+            </h1>
             <p className="lead mt-3 text-white/70">Отмечайте любимых — каждый подходит к любой анимационной программе.</p>
 
             <form
@@ -197,6 +202,20 @@ export function CostumesCatalog() {
                 </button>
               ))}
             </div>
+
+            {/* Честно: в каталоге не все костюмы (просьба Кирилла 31.10) — нужного героя можно спросить */}
+            <p className="mt-4 text-[15px] leading-snug text-white/70">
+              На сайте не все костюмы.{" "}
+              <a
+                href={telegramLink(contacts, "Здравствуйте! Подскажите, есть ли у вас костюм героя, которого нет на сайте?")}
+                target="_blank"
+                rel="noopener"
+                data-track="costumes_ask_tg"
+                className="font-semibold text-white underline decoration-white/40 underline-offset-4 hover:decoration-white"
+              >
+                Спросите менеджера про своего героя
+              </a>
+            </p>
           </div>
 
           {/* Витрина героев — только на широком экране */}
@@ -303,6 +322,17 @@ export function CostumesCatalog() {
                 <button type="button" onClick={reset} className={`btn ${elsewhere ? "btn-soft" : "btn-primary"}`} data-track="costume_search_reset">
                   Сбросить
                 </button>
+                {q && (
+                  <a
+                    href={telegramLink(contacts, `Здравствуйте! Есть ли у вас костюм «${q.trim()}»?`)}
+                    target="_blank"
+                    rel="noopener"
+                    data-track="costumes_empty_ask_tg"
+                    className="btn btn-soft"
+                  >
+                    <Send size={18} /> Спросить в Telegram
+                  </a>
+                )}
               </div>
             </div>
           )}

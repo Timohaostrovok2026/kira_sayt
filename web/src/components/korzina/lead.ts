@@ -100,7 +100,9 @@ export function buildLeadText(s: CartState, lines: CartLine[], total: number, ca
   if (f.note.trim()) info.push(`Пожелания: ${f.note.trim()}`);
   if (info.length) out.push("", ...info);
 
-  out.push("", `Имя: ${f.name.trim() || "—"}`, `Телефон: ${formatPhone(f.phone) || f.phone}`);
+  // Без телефона текст уходит прямо в мессенджер (ссылки под формой): там клиента и так видно — пустые строки не нужны.
+  if (phoneValid(f.phone)) out.push("", `Имя: ${f.name.trim() || "—"}`, `Телефон: ${formatPhone(f.phone) || f.phone}`);
+  else if (f.name.trim()) out.push("", `Имя: ${f.name.trim()}`);
   return out.join("\n");
 }
 

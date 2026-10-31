@@ -31,7 +31,7 @@ export function BottomNav() {
                 href={href}
                 data-track={`bottom_${label}`}
                 aria-current={active ? "page" : undefined}
-                className="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-white/60 transition-colors aria-[current=page]:text-white"
+                className="relative flex h-full flex-col items-center justify-center gap-1 text-[11px] font-semibold text-white/60 transition-colors aria-[current=page]:text-lime"
               >
                 <span className="relative">
                   <Icon size={22} strokeWidth={active ? 2.4 : 2} />
@@ -42,7 +42,7 @@ export function BottomNav() {
                   )}
                 </span>
                 {label}
-                {active && <span className="absolute top-0 h-[3px] w-8 rounded-b-full bg-rasp-400" />}
+                {active && <span className="absolute top-0 h-[3px] w-8 rounded-b-full bg-lime" />}
               </Link>
             </li>
           );

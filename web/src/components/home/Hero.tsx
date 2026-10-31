@@ -5,7 +5,9 @@ import { AGE_GROUPS, minPrice, type Catalog } from "@/data/catalog";
 import { money } from "@/lib/format";
 import { Photo } from "@/components/Photo";
 import { splitWords } from "@/components/SplitWords";
+import { Accent } from "@/components/Accent";
 import { HeroScene } from "./HeroScene";
+import { Marquee } from "./Marquee";
 import { Smile } from "./Smile";
 
 /** Мягкая маска по краям: фото на малиновом фоне растворяются в сцене. */
@@ -72,17 +74,30 @@ export function Hero({ newYear, cat }: { newYear: boolean; cat: Catalog }) {
 
       <div className="wrap relative grid items-center gap-1 pt-2 pb-7 md:pt-10 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pt-16 lg:pb-16">
         <div className="relative z-10">
-          <p className="mb-5 hidden items-center gap-2 sm:inline-flex rounded-full bg-white/10 py-1.5 pr-4 pl-1.5 text-[14px] font-semibold ring-1 ring-white/15 backdrop-blur">
-            <span className="rounded-full bg-rasp-500 px-2.5 py-0.5 text-[12px] font-bold">
-              {newYear ? "Новый год" : "Каждый день"}
-            </span>
-            {newYear ? "Даты на декабрь уже бронируют" : "Праздники в Москве и области"}
-          </p>
+          {/* Сезонная плашка видна и на телефоне: в Новый год ведёт к новогодним программам */}
+          {newYear ? (
+            <Link
+              href={`/sobrat?kind=${encodeURIComponent("Новый год")}`}
+              data-track="hero_season"
+              className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 py-1.5 pr-4 pl-1.5 text-[14px] font-semibold ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15"
+            >
+              <span className="shrink-0 whitespace-nowrap rounded-full bg-rasp-500 px-2.5 py-0.5 text-[12px] font-bold">Новый год</span>
+              {/* На 375–390 px полная фраза не влезает в одну строку пилюли */}
+              <span className="sm:hidden">Декабрь уже бронируют</span>
+              <span className="hidden sm:inline">Даты на декабрь уже бронируют</span>
+              <ArrowRight size={16} className="shrink-0" />
+            </Link>
+          ) : (
+            <p className="mb-5 hidden items-center gap-2 rounded-full bg-white/10 py-1.5 pr-4 pl-1.5 text-[14px] font-semibold ring-1 ring-white/15 backdrop-blur sm:inline-flex">
+              <span className="rounded-full bg-rasp-500 px-2.5 py-0.5 text-[12px] font-bold">Каждый день</span>
+              Праздники в Москве и области
+            </p>
+          )}
           {/* Слова заголовка выезжают по очереди сразу при загрузке (CSS, без ожидания скриптов) */}
           <h1 className="h-hero split-now">
             {splitWords(
               <>
-                Праздник, который <span className="text-rasp-300">дети запомнят</span>
+                Праздник, который дети <Accent>запомнят</Accent>
               </>,
             )}
           </h1>
@@ -90,7 +105,7 @@ export function Hero({ newYear, cat }: { newYear: boolean; cat: Catalog }) {
             110+ героев, квесты и шоу. Цены сразу на сайте, заявка в&nbsp;один клик.
           </p>
           <div className="mt-7 flex animate-rise flex-col gap-3 [animation-delay:.45s] sm:flex-row">
-            <Link href="/sobrat" className="btn btn-lg btn-light" data-track="hero_build">
+            <Link href="/sobrat" className="btn btn-lg btn-accent" data-track="hero_build">
               <Sparkles size={20} /> Собрать праздник
             </Link>
             <Link href="/pakety" className="btn btn-lg btn-ghost text-white" data-track="hero_packs">
@@ -156,6 +171,9 @@ export function Hero({ newYear, cat }: { newYear: boolean; cat: Catalog }) {
               </Link>
             ))}
           </div>
+        </div>
+        <div className="overflow-hidden pt-2 pb-5">
+          <Marquee />
         </div>
         <Smile edge="bottom" className="fill-white" />
       </div>

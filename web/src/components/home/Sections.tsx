@@ -1,9 +1,10 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { ArrowRight, ChevronDown, Send } from "lucide-react";
 import { EXTRA_GROUPS, SPECIAL_EXTRAS, type Catalog, type Kind } from "@/data/catalog";
 import type { Contacts, FaqItem, GalleryItem, Step } from "@/data/site";
 import { CostumeCard, ExtraCard, ProgramCard, SectionHead } from "@/components/cards";
+import { Accent } from "@/components/Accent";
 import { Photo } from "@/components/Photo";
 import { HomePackages } from "./HomePackages";
 import { AutoRail } from "./AutoRail";
@@ -35,7 +36,11 @@ export function CostumesRail({ cat, next = "paper" }: { cat: Catalog; next?: Nex
         <SectionHead
           dark
           eyebrow="Костюмы"
-          title={<>Любой герой, которого ждёт&nbsp;ребёнок</>}
+          title={
+            <>
+              Любой герой, которого <span className="whitespace-nowrap">ждёт <Accent>ребёнок</Accent></span>
+            </>
+          }
           text="Нажмите «+», чтобы выбрать героя. Стандартный костюм уже в цене программы."
           action={
             <Link href="/kostyumy" className="btn btn-light hidden md:inline-flex" data-track="home_costumes_all">
@@ -68,7 +73,7 @@ export function CostumesRail({ cat, next = "paper" }: { cat: Catalog; next?: Nex
   );
 }
 
-export function SeasonHits({ cat, kind, title, text }: { cat: Catalog; kind: Kind; title: string; text: string }) {
+export function SeasonHits({ cat, kind, title, text }: { cat: Catalog; kind: Kind; title: ReactNode; text: string }) {
   const list = cat.programs.filter((p) => p.kind === kind);
   if (!list.length) return null;
   return (
@@ -105,7 +110,7 @@ export function Shows({ cat }: { cat: Catalog }) {
       <div className="wrap">
         <SectionHead
           eyebrow="Шоу"
-          title="Вау-момент праздника"
+          title={<>Вау-момент <Accent>праздника</Accent></>}
           text="Добавьте шоу к любой программе: дети будут вспоминать его неделю."
           action={
             <Link href="/sobrat?step=3" className="btn btn-soft hidden md:inline-flex">
@@ -136,7 +141,7 @@ export function PackagesTeaser({ cat }: { cat: Catalog }) {
         <SectionHead
           dark
           eyebrow="Пакеты"
-          title="Не хотите собирать? Возьмите готовое"
+          title={<>Не хотите собирать? Возьмите <Accent>готовое</Accent></>}
           text="Пакет всегда выгоднее, чем те же позиции по отдельности. Скидка до 20%."
           action={
             <Link href="/pakety" className="btn btn-light hidden md:inline-flex" data-track="home_packs_all">
@@ -164,7 +169,7 @@ export function Gallery({ gallery, contacts }: { gallery: GalleryItem[]; contact
           eyebrow="Живые праздники"
           title={
             <>
-              Артистам <span className="text-rasp-500">19–23</span> года — и это видно
+              Артистам <Accent>19–23</Accent> года — и это видно
             </>
           }
           text="Энергия, современный вкус и общий язык и с малышами, и с подростками. Вот как это выглядит."
@@ -217,7 +222,7 @@ export function HowItWorks({ steps }: { steps: Step[] }) {
   return (
     <section className="py-14 md:py-20">
       <div className="wrap">
-        <SectionHead center eyebrow="Как это работает" title="Четыре шага до праздника" />
+        <SectionHead center eyebrow="Как это работает" title={<>Четыре шага до <Accent>праздника</Accent></>} />
         <ol className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {steps.map((s, i) => (
             <li key={s.title} className="card lift reveal relative overflow-hidden p-4 md:p-5" style={{ "--d": `${i * 80}ms` } as CSSProperties}>
@@ -244,7 +249,7 @@ export function Faq({ faq }: { faq: FaqItem[] }) {
   return (
     <section className="py-14 md:py-20">
       <div className="wrap grid gap-8 lg:grid-cols-[0.8fr_1.2fr] lg:gap-14">
-        <SectionHead eyebrow="Вопросы" title="Коротко о главном" />
+        <SectionHead eyebrow="Вопросы" title={<>Коротко о <Accent>главном</Accent></>} />
         <div className="flex flex-col gap-2">
           {faq.map((f) => (
             <details key={f.q} className="card group overflow-hidden" data-track={`faq_${f.q.slice(0, 20)}`}>
@@ -266,10 +271,10 @@ export function FinalCta({ contacts }: { contacts: Contacts }) {
     <section className="px-4 pb-14 md:pb-20">
       <div className="stage relative mx-auto max-w-[1176px] overflow-hidden rounded-[32px] px-6 py-12 text-center md:py-16">
         <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-rasp-500/40 blur-[90px]" />
-        <h2 className="h-section relative mx-auto max-w-2xl">Соберите праздник за 2 минуты</h2>
+        <h2 className="h-section relative mx-auto max-w-2xl">Соберите праздник за <Accent>2 минуты</Accent></h2>
         <p className="lead relative mx-auto mt-3 max-w-md text-white/70">Цены сразу. Заявка уходит менеджеру одной кнопкой.</p>
         <div className="relative mt-7 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link href="/sobrat" className="btn btn-lg btn-light" data-track="final_build">
+          <Link href="/sobrat" className="btn btn-lg btn-accent" data-track="final_build">
             Собрать праздник
           </Link>
           <a href={contacts.telegram} target="_blank" rel="noopener" className="btn btn-lg btn-ghost text-white" data-track="final_tg">

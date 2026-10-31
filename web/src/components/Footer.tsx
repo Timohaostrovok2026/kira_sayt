@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ArrowUpRight, Camera, MessageCircle, Phone, Send } from "lucide-react";
 import type { Contacts } from "@/data/site";
+import { Accent } from "./Accent";
 import { NAV } from "./nav";
 
 function bands(contacts: Contacts) {
@@ -18,7 +19,9 @@ export function Footer({ contacts, legal }: { contacts: Contacts; legal?: string
     <footer id="kontakty" className="stage pb-nav scroll-mt-16 overflow-hidden">
       <div className="wrap pt-16 pb-10 md:pt-24">
         <p className="eyebrow text-rasp-300">Контакты</p>
-        <h2 className="h-section mt-3 max-w-xl">Ответим на любой вопрос за&nbsp;пару минут</h2>
+        <h2 className="h-section mt-3 max-w-xl">
+          Ответим на любой <Accent>вопрос</Accent> за&nbsp;пару минут
+        </h2>
         <ul className="mt-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {bands(contacts).map(({ href, label, value, icon: Icon }) => (
             <li key={label}>

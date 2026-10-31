@@ -14,15 +14,17 @@ import {
   Shows,
 } from "@/components/home/Sections";
 import type { Kind } from "@/data/catalog";
+import type { ReactNode } from "react";
+import { Accent } from "@/components/Accent";
 
 import { cacheLife, cacheTag } from "next/cache";
 import { CATALOG_TAG, getCatalog, getSiteContent } from "@/lib/content/get";
 
-const SEASON: Record<ReturnType<typeof currentSeason>, { kind: Kind | null; title: string; text: string }> = {
-  halloween: { kind: "Новый год", title: "Новый год уже бронируют", text: "Лучшие даты в декабре разбирают первыми." },
-  newyear: { kind: "Новый год", title: "Новый год уже бронируют", text: "Лучшие даты в декабре разбирают первыми." },
-  graduation: { kind: "Выпускной", title: "Выпускной для 4 класса", text: "Пакеты под класс до 20 выпускников." },
-  birthday: { kind: "Квест", title: "Квесты, которые любят все", text: "Сюжет, загадки и командная игра." },
+const SEASON: Record<ReturnType<typeof currentSeason>, { kind: Kind | null; title: ReactNode; text: string }> = {
+  halloween: { kind: "Новый год", title: <>Новый год уже <Accent>бронируют</Accent></>, text: "Лучшие даты в декабре разбирают первыми." },
+  newyear: { kind: "Новый год", title: <>Новый год уже <Accent>бронируют</Accent></>, text: "Лучшие даты в декабре разбирают первыми." },
+  graduation: { kind: "Выпускной", title: <>Выпускной для <Accent>4 класса</Accent></>, text: "Пакеты под класс до 20 выпускников." },
+  birthday: { kind: "Квест", title: <>Квесты, которые любят <Accent>все</Accent></>, text: "Сюжет, загадки и командная игра." },
 };
 
 export default async function Home() {

@@ -2,6 +2,7 @@ import { ArrowUpRight, Star } from "lucide-react";
 import type { SiteContent } from "@/data/site";
 import { plural } from "@/lib/format";
 import { SectionHead } from "@/components/cards";
+import { Accent } from "@/components/Accent";
 import { ReviewCard } from "./ReviewCard";
 
 /** Настоящие отзывы с Яндекс Карт (редактируются в админке). */
@@ -12,7 +13,7 @@ export function Reviews({ site }: { site: SiteContent }) {
       <div className="wrap">
         <SectionHead
           eyebrow="Отзывы"
-          title="Родители возвращаются снова"
+          title={<>Родители возвращаются <Accent>снова</Accent></>}
           action={
             <a
               href={site.yandexUrl}

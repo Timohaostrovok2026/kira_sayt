@@ -4,6 +4,7 @@ import { ArrowRight } from "lucide-react";
 import { KINDS, minPrice, type Catalog, type Kind } from "@/data/catalog";
 import { money, plural } from "@/lib/format";
 import { SectionHead } from "@/components/cards";
+import { Accent } from "@/components/Accent";
 import { Photo } from "@/components/Photo";
 
 /** Фото героя растворяется влево, в текст плитки. */
@@ -30,7 +31,7 @@ export function Formats({ cat, seasonKind }: { cat: Catalog; seasonKind: Kind | 
   return (
     <section className="py-14 md:py-20">
       <div className="wrap">
-        <SectionHead eyebrow="Форматы" title="С чего начнём?" text="Выберите формат — покажем программы с ценами." />
+        <SectionHead eyebrow="Форматы" title={<>С чего <Accent>начнём?</Accent></>} text="Выберите формат — покажем программы с ценами." />
         <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {tiles.map((k, i) => {
             const big = i === 0;

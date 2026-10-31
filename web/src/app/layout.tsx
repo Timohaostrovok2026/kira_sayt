@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
 import { Onest, Unbounded } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
 const unbounded = Unbounded({
@@ -12,6 +13,13 @@ const unbounded = Unbounded({
 const onest = Onest({
   variable: "--font-onest",
   subsets: ["latin", "cyrillic"],
+});
+
+// Акцентное слово в заголовках (вариант Б, DESIGN.md §3). Шрифт Red Keds — авторы заявляют бесплатное использование; «₽» в нём нет.
+const nauryz = localFont({
+  variable: "--font-nauryz",
+  src: "./fonts/nauryz.woff",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -43,7 +51,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru" className={`${unbounded.variable} ${onest.variable}`}>
+    <html lang="ru" className={`${unbounded.variable} ${onest.variable} ${nauryz.variable}`}>
       <body className="flex min-h-dvh flex-col">
         {children}
         {/* Android присылает «можно установить» рано, иногда до загрузки React: запоминаем событие для InstallPrompt */}

@@ -2,8 +2,8 @@
 
 /*
   Дизайн-система «Улыбайся».
-  Один фирменный цвет — малиновый. Тёмная «сцена» повторяет фон студийных фото героев,
-  поэтому фото сливаются со страницей. Светлые разделы — для чтения.
+  Фирменный цвет — малиновый. Салатовый — второй акцент, только на тёмной сцене и в четырёх местах (DESIGN.md §2).
+  Тёмная «сцена» повторяет фон студийных фото героев, поэтому фото сливаются со страницей. Светлые разделы — для чтения.
 */
 
 @theme {
@@ -24,9 +24,12 @@
   --color-paper: #fff8fa;
   --color-line: rgb(35 7 15 / 0.1);
   --color-star: #ffc23d;
+  --color-lime: #c8f560;
+  --color-lime-300: #dcfa8e;
 
   --font-display: var(--font-unbounded), system-ui, sans-serif;
   --font-sans: var(--font-onest), system-ui, sans-serif;
+  --font-accent: var(--font-nauryz), var(--font-unbounded), system-ui, sans-serif;
 
   --radius-card: 24px;
   --radius-pill: 999px;
@@ -145,6 +148,15 @@ body {
     line-height: 1.2;
     letter-spacing: -0.01em;
   }
+  /* Акцентное слово заголовка: Nauryz, малиновый на светлом, салатовый на сцене. */
+  .accent {
+    font-family: var(--font-accent);
+    font-weight: 400;
+    letter-spacing: 0;
+    color: var(--color-rasp-500);
+  }
+  .stage .accent, .stage-soft .accent { color: var(--color-lime); }
+
   .eyebrow {
     font-size: 13px;
     font-weight: 700;
@@ -189,6 +201,13 @@ body {
     box-shadow: 0 10px 30px -12px rgb(0 0 0 / 0.45);
   }
   .btn-light:hover { background: var(--color-rasp-50); }
+  /* Главное действие на сцене (вариант Б): салатовая, текст тёмный. Только на тёмном фоне. */
+  .btn-accent {
+    background: var(--color-lime);
+    color: var(--color-ink);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5), 0 12px 34px -12px rgb(200 245 96 / 0.55);
+  }
+  .btn-accent:hover { background: var(--color-lime-300); }
   .btn-ghost {
     background: transparent;
     color: currentColor;

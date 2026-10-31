@@ -5,6 +5,7 @@ import { useState } from "react";
 import { ArrowRight, Gift, MessageCircle, Shirt, ShoppingBag } from "lucide-react";
 import type { Package } from "@/data/catalog";
 import { useCatalog, useSite } from "@/lib/catalog-context";
+import { Accent } from "@/components/Accent";
 import { PackageCard } from "@/components/cards";
 import { useCart } from "@/lib/cart";
 import { money } from "@/lib/format";
@@ -43,7 +44,9 @@ export function PackagesView() {
       {/* Короткий первый экран */}
       <section className="wrap pt-10 pb-8 md:pt-16 md:pb-12">
         <p className="eyebrow text-rasp-300">Готовые пакеты</p>
-        <h1 className="h-hero mt-3 max-w-4xl">Не хотите собирать? Возьмите готовое</h1>
+        <h1 className="h-hero mt-3 max-w-4xl">
+          Не хотите собирать? Возьмите <Accent>готовое</Accent>
+        </h1>
         <p className="lead mt-4 max-w-2xl text-white/75">
           Пакет всегда дешевле, чем те же позиции по отдельности. Внутри можно выбрать шоу, квест или съёмку.
         </p>

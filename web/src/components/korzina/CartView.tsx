@@ -10,12 +10,13 @@ import { CartOptions } from "./CartOptions";
 import { EmptyCart } from "./EmptyCart";
 import { LeadForm } from "./LeadForm";
 import { LeadResult, type LeadResultData } from "./LeadResult";
-import { buildLeadText, phoneValid } from "./lead";
-import { useCatalog } from "@/lib/catalog-context";
+import { buildLeadText, phoneValid, telegramLink, whatsappLink } from "./lead";
+import { useCatalog, useSite } from "@/lib/catalog-context";
 
 export function CartView() {
   const cart = useCart();
   const cat = useCatalog();
+  const { contacts } = useSite();
   const { state, lines, total, count, ready, clear } = cart;
 
   const [result, setResult] = useState<LeadResultData | null>(null);
@@ -50,6 +51,8 @@ export function CartView() {
 
   const custom = lines.some((l) => l.type === "package" && l.price === 0);
   const okPhone = phoneValid(state.form.phone);
+  // Текст заявки: уходит с формой и в ссылки «в мессенджер» под ней.
+  const msgText = buildLeadText(state, lines, total, cat);
 
   const focusPhone = () => {
     const el = phoneRef.current;
@@ -65,7 +68,7 @@ export function CartView() {
       focusPhone();
       return;
     }
-    const text = buildLeadText(state, lines, total, cat);
+    const text = msgText;
     setSending(true);
     track("lead_submit", { total });
     const ctrl = new AbortController();
@@ -176,6 +179,31 @@ export function CartView() {
                 </button>
                 <p className="text-center text-[13px] leading-snug text-ink-soft">
                   Менеджер напишет в мессенджер и всё уточнит. Без созвонов.
+                </p>
+                {/* Второй путь (раунд 15): часть мам не любит формы. Такая заявка идёт мимо базы — поэтому мелко и со счётчиком. */}
+                <p className="border-t border-line pt-3 text-center text-[14px] text-ink-soft">
+                  Удобнее в мессенджере?{" "}
+                  <span className="whitespace-nowrap">
+                    <a
+                      href={whatsappLink(contacts, msgText)}
+                      target="_blank"
+                      rel="noopener"
+                      data-track="lead_msg_wa"
+                      className="font-semibold text-rasp-600 underline decoration-rasp-200 underline-offset-4 hover:decoration-rasp-600"
+                    >
+                      WhatsApp
+                    </a>{" "}
+                    ·{" "}
+                    <a
+                      href={telegramLink(contacts, msgText)}
+                      target="_blank"
+                      rel="noopener"
+                      data-track="lead_msg_tg"
+                      className="font-semibold text-rasp-600 underline decoration-rasp-200 underline-offset-4 hover:decoration-rasp-600"
+                    >
+                      Telegram
+                    </a>
+                  </span>
                 </p>
               </div>
             </div>
