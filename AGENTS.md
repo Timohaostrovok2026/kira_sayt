@@ -38,12 +38,12 @@ sayt_kira/                            git-репозиторий → GitHub Timo
 
 **Стек:** Next.js 16.4 (App Router, `cacheComponents: true`), React 19, TypeScript, Tailwind CSS v4, `node:sqlite`, `sharp`, `lucide-react`.
 
-**Сервер:** Timeweb, Ubuntu 24.04, `195.133.73.111`.
-- Сайт: **https://ulybajsja.online** (домен в Timeweb, DNS Timeweb; `www` → 301 на основной). Запасной вход по IP: https://195.133.73.111. Адреса `*.sslip.io` / `*.nip.io` в РФ режутся по имени — клиентам не давать.
+**Сервер:** Timeweb, Ubuntu 24.04, **`194.87.43.80`** (с 2026-11-01; старый `195.133.73.111` удалён владельцем — его подсеть резалась ТСПУ, раунды 16–17). Чистый сервер настраивает `web/scripts/setup-server.sh` (Node и Caddy везёт файлами, конфиги — `web/scripts/server/`).
+- Сайт: **https://ulybajsja.online** (домен в Timeweb, DNS Timeweb; `www` → 301 на основной). Запасной вход по IP: https://194.87.43.80. Адреса `*.sslip.io` / `*.nip.io` в РФ режутся по имени — клиентам не давать.
 - Код: `/opt/ulybaysya/app`, служба `ulybaysya` (systemd, пользователь `uly`), Node 24 в `/usr/local/bin`.
-- Данные: `/var/lib/ulybaysya` (база `site.db` + `uploads/`), настройки: `/etc/ulybaysya.env`.
-- HTTPS: Caddy (`/etc/caddy/Caddyfile`), сертификаты Let's Encrypt на домен и на IP, продлеваются сами. **HTTP/3 выключен**, UDP 443 в ufw — `reject` (а не молчаливый drop), чтобы телефоны со старой записью Alt-Svc сразу падали на TCP (с объявленным, но недоступным HTTP/3 Safari на iPhone зависал — `docs/ROADMAP.md` Т11).
-- Вход: только по ключу `~/.ssh/ulybaysya_deploy` — вход по паролю на сервере выключен (`/etc/ssh/sshd_config.d/00-ulybaysya-keys-only.conf`). Ключ на сервере один: потеряли — вход через консоль в панели Timeweb. Пароли в чат не просить и не вводить.
+- Данные: `/var/lib/ulybaysya` (база `site.db` + `uploads/`), настройки: `/etc/ulybaysya.env` (заполняет владелец, в git и в чат не попадают). Служба слушает только 127.0.0.1:3000, наружу отдаёт Caddy.
+- HTTPS: Caddy (бинарник `/usr/local/bin/caddy`, конфиг `/etc/caddy/Caddyfile` из `web/scripts/server/Caddyfile`), сертификаты Let's Encrypt на домен и на IP, продлеваются сами. **HTTP/3 выключен**, UDP 443 в ufw — `reject` (а не молчаливый drop), чтобы телефоны со старой записью Alt-Svc сразу падали на TCP (с объявленным, но недоступным HTTP/3 Safari на iPhone зависал — `docs/ROADMAP.md` Т11).
+- Вход: только по ключу `~/.ssh/ulybaysya_deploy` — вход по паролю на сервере выключен (`/etc/ssh/sshd_config.d/00-ulybaysya-keys-only.conf`). Ключ на сервере один (`ulybaysya-site-deploy` в панели Timeweb): потеряли — вход через консоль в панели Timeweb. Пароли в чат не просить и не вводить.
 - С сервера недоступны npm-реестр и nodejs.org — пакеты едут кэшем с Mac (это делает `deploy.sh`).
 
 ---
@@ -123,6 +123,7 @@ sayt_kira/                            git-репозиторий → GitHub Timo
 - Пользовательский текст (заявки, отзывы, контент из админки) — только через JSX, без `dangerouslySetInnerHTML`.
 - Загрузки: только изображения, перекодирование через `sharp` в webp, пути без `..`.
 - Не открывать сервер шире портов 22, 80, 443 (ufw).
+- Сервер удалять только после копии базы (`backup.sh`) и проверки, что архив открывается: 2026-11-01 сервер удалили без этого, базу подняли из ночной копии в облаке.
 - Код — в **публичном** репозитории https://github.com/Timohaostrovok2026/kira_sayt (`origin`, ветка `main`). Всё, что коммитится, видят все: секреты, пароли, данные клиентов (заявки, телефоны), выгрузки базы — никогда в git. Push — после проверенного коммита; `--force`, удаление веток и смена видимости — нельзя.
 - Хук `.claude/hooks/block-destructive.sh` механически блокирует необратимые команды (`rm -rf` вне `scratch/` и `.next`, `git reset --hard`, `git push --force`), чтение `.env` и ключей SSH, запись в боевую базу через `scp`/`rsync`, `seed-stats` на сервере, `DROP TABLE` и `DELETE` без условия. Сработал — не обходить, а спросить владельца.
 
