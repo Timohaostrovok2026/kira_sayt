@@ -13,7 +13,7 @@
 # там правки Кирилла из админки, заявки и статистика.
 set -euo pipefail
 
-HOST="${DEPLOY_HOST:-root@195.133.73.111}"
+HOST="${DEPLOY_HOST:-root@194.87.43.80}"
 KEY="${DEPLOY_KEY:-$HOME/.ssh/ulybaysya_deploy}"
 APP=/opt/ulybaysya/app
 CACHE=/opt/ulybaysya/npmcache
@@ -70,4 +70,4 @@ echo "→ Прогрев фото"
 remote 'for p in / /pakety /kostyumy /sobrat; do curl -s --max-time 20 "http://127.0.0.1:3000$p"; done \
   | grep -o "/_next/image?url=[^\" ]*" | sed "s/&amp;/\&/g" | sort -u \
   | xargs -P 4 -I{} curl -s -o /dev/null --max-time 30 -H "Accept: image/avif,image/webp,*/*" "http://127.0.0.1:3000{}"; echo "  готово"' || true
-echo "✓ Готово: https://195.133.73.111"
+echo "✓ Готово: https://ulybajsja.online (по IP: https://${HOST#*@})"

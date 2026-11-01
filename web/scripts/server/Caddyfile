@@ -1,0 +1,35 @@
+# Caddy для «Улыбайся». Ставится скриптом setup-server.sh в /etc/caddy/Caddyfile.
+# HTTP/3 выключен: с объявленным, но закрытым UDP 443 Safari на iPhone виснет (ROADMAP Т11).
+{
+	servers {
+		protocols h1 h2
+	}
+}
+
+(site) {
+	# Сбросить у браузеров запомненный HTTP/3 (старый Alt-Svc жил 30 дней).
+	header Alt-Svc clear
+	encode zstd gzip
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy 127.0.0.1:3000
+}
+
+ulybajsja.online {
+	import site
+}
+
+www.ulybajsja.online {
+	redir https://ulybajsja.online{uri} permanent
+}
+
+# Запасной вход по IP: сертификат Let's Encrypt на адрес (только профиль shortlived, 6 дней, продлевается сам).
+__SERVER_IP__ {
+	tls {
+		issuer acme {
+			profile shortlived
+		}
+	}
+	import site
+}

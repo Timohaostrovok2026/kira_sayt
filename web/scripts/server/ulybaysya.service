@@ -1,0 +1,18 @@
+[Unit]
+Description=Сайт «Улыбайся» (Next.js)
+After=network.target
+
+[Service]
+User=uly
+Group=uly
+WorkingDirectory=/opt/ulybaysya/app
+EnvironmentFile=/etc/ulybaysya.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+ExecStart=/usr/local/bin/node node_modules/next/dist/bin/next start
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
