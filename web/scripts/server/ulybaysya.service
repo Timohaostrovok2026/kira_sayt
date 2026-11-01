@@ -8,9 +8,8 @@ Group=uly
 WorkingDirectory=/opt/ulybaysya/app
 EnvironmentFile=/etc/ulybaysya.env
 Environment=NODE_ENV=production
-Environment=PORT=3000
-Environment=HOSTNAME=127.0.0.1
-ExecStart=/usr/local/bin/node node_modules/next/dist/bin/next start
+# Только локально: наружу сайт отдаёт Caddy.
+ExecStart=/usr/local/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 3000
 Restart=always
 RestartSec=3
 
