@@ -72,7 +72,7 @@ export async function resendUndelivered() {
   }
 }
 
-/** Фоновая досылка раз в 5 минут; запускается один раз при старте сервера. */
+/** Фоновая досылка раз в минуту (проходы не накладываются); запускается один раз при старте сервера. */
 export function startResendLoop() {
   if (g.__leadsLoop) return;
   const tick = () => resendUndelivered().catch((e) => console.error("[leads] досылка упала", e));
