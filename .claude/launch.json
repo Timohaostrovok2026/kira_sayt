@@ -20,6 +20,12 @@
       "port": 3300
     },
     {
+      "name": "ulybaysya-audit",
+      "runtimeExecutable": "env",
+      "runtimeArgs": ["DATA_DIR=/Users/cheif/sayt_kira/scratch/audit/data", "STATS_PASSWORD=uly-audit-local", "TELEGRAM_BOT_TOKEN=audit-disabled", "TELEGRAM_CHAT_ID=0", "npm", "--prefix", "web", "run", "start", "--", "--port", "3500"],
+      "port": 3500
+    },
+    {
       "name": "kirill-artifact",
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-I", "-m", "http.server", "3400", "--bind", "127.0.0.1", "--directory", "scratch/kirill-artifact-2026-10-31"],

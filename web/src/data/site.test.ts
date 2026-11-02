@@ -12,3 +12,9 @@ test("Новый год: с 3 ноября до 15 января включите
   assert.equal(on(1, 15), "newyear");
   assert.equal(on(1, 16), "birthday");
 });
+
+test("сезон меняется в полночь по Москве, а не по UTC сервера", () => {
+  // 2 ноября 21:30 UTC = 3 ноября 00:30 МСК
+  assert.equal(currentSeason(new Date(Date.UTC(2027, 10, 2, 21, 30))), "newyear");
+  assert.equal(currentSeason(new Date(Date.UTC(2027, 10, 2, 20, 30))), "halloween");
+});

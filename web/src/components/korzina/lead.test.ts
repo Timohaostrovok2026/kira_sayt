@@ -37,7 +37,7 @@ const state = (form: Partial<CartState["form"]> = {}): CartState => ({
   extras: { cryo: 2, ball: 3 },
   packages: [{ id: "custom", choices: {} }],
   costumes: [],
-  form: { childAge: "", date: "", place: "", name: "Анна", phone: "+7 (977) 593-97-39", note: "", outsideMkad: true, km: 0, sound: true, ...form },
+  form: { childAge: "", date: "", place: "", name: "Анна", phone: "+7 (977) 593-97-39", note: "", outsideMkad: true, km: 0, sound: true, soundAuto: false, ...form },
 });
 const lines: CartLine[] = [
   { key: "p:p1", type: "program", id: "p1", title: "Программа p1", qty: 1, price: 10000 },

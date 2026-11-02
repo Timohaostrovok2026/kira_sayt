@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { MKAD_BASE, MKAD_PER_KM, SOUND_PRICE } from "@/data/catalog";
 import { useCart } from "@/lib/cart";
 import { useCatalog } from "@/lib/catalog-context";
@@ -14,18 +14,15 @@ export function CartOptions() {
   const loud = needsLoudSound(state, useCatalog());
 
   // Бумажное шоу без усиленного звука не провести — включаем сами, один раз, когда оно появилось в корзине.
-  const autoOn = useRef(false);
+  // Флаг — в корзине, а не в компоненте: иначе после возврата на страницу звук включался снова.
   useEffect(() => {
     if (!ready) return;
     if (!loud) {
-      autoOn.current = false;
+      if (f.soundAuto) setForm({ soundAuto: false });
       return;
     }
-    if (!autoOn.current) {
-      autoOn.current = true;
-      if (!f.sound) setForm({ sound: true });
-    }
-  }, [ready, loud, f.sound, setForm]);
+    if (!f.soundAuto) setForm(f.sound ? { soundAuto: true } : { sound: true, soundAuto: true });
+  }, [ready, loud, f.sound, f.soundAuto, setForm]);
 
   return (
     <div className="grid gap-3">

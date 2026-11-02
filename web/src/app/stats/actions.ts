@@ -1,8 +1,10 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { clientIp } from "@/data/rate-limit";
 import { COOKIE, COOKIE_MAX_AGE, COOKIE_PATH, LEGACY_COOKIE_PATH, safeEqual, statsPassword, tokenFor } from "@/lib/auth";
+import { limits } from "@/lib/limits";
 import { parsePeriod } from "@/lib/stats/period";
 
 export interface LoginState {
@@ -19,11 +21,15 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
   const cfg = statsPassword();
   if (!cfg) return { error: "Статистика выключена: на сервере не задан STATS_PASSWORD." };
   const given = String(formData.get("password") ?? "");
+  // Пауза ниже не спасает от перебора параллельными запросами — поэтому ещё и лимит попыток с адреса.
+  const ip = clientIp((await headers()).get("x-forwarded-for"));
+  if (!limits.login.hit(ip)) return { error: "Слишком много попыток. Подождите 15 минут." };
   if (!given || !safeEqual(tokenFor(given), tokenFor(cfg.password))) {
     // Небольшая пауза — чтобы перебор паролей был медленным.
     await new Promise((r) => setTimeout(r, 800));
     return { error: "Неверный пароль" };
   }
+  limits.login.reset(ip);
   (await cookies()).set(COOKIE, tokenFor(cfg.password), {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",

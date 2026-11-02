@@ -1,4 +1,6 @@
+import { clientIp, readJsonLimited, TOO_LARGE } from "@/data/rate-limit";
 import { getDb } from "@/lib/db";
+import { limits } from "@/lib/limits";
 
 interface Incoming {
   visitor?: string;
@@ -23,13 +25,14 @@ function refHost(ref?: string | null, self?: string | null) {
 
 export async function POST(req: Request) {
   if (BOT.test(req.headers.get("user-agent") ?? "")) return new Response(null, { status: 204 });
-  let body: Incoming;
-  try {
-    body = await req.json();
-  } catch {
-    return new Response(null, { status: 400 });
-  }
-  const events = (body.events ?? []).slice(0, 50);
+  // Без лимита любой скрипт раздует базу мусорными событиями и испортит статистику.
+  if (!limits.track.hit(clientIp(req.headers.get("x-forwarded-for")))) return new Response(null, { status: 429 });
+  // Пачка до 50 событий — единицы килобайт; 64 КБ с запасом.
+  const parsed = await readJsonLimited(req, 64_000);
+  if (parsed === TOO_LARGE) return new Response(null, { status: 413 });
+  const body = parsed as Incoming;
+  if (!body || typeof body !== "object" || !Array.isArray(body.events)) return new Response(null, { status: 400 });
+  const events = body.events.slice(0, 50).filter((e) => e && typeof e === "object");
   if (!events.length || !body.visitor || !body.session) return new Response(null, { status: 204 });
 
   const self = (req.headers.get("host") ?? "").split(":")[0].replace(/^www\./, "");

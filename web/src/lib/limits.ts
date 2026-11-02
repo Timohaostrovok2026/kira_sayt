@@ -1,0 +1,17 @@
+import "server-only";
+import { RateLimiter } from "@/data/rate-limit";
+
+// Как и база, счётчики на globalThis: вход, маршруты и фоновые задачи собираются в разные бандлы,
+// а лимит должен быть один на процесс.
+const g = globalThis as { __limits?: ReturnType<typeof create> };
+
+function create() {
+  return {
+    /** Неверный пароль: 10 попыток за 15 минут с адреса — перебор становится бессмысленным, Кирилл с опечатками не упрётся. */
+    login: new RateLimiter(10, 15 * 60_000),
+    /** Аналитика: браузер шлёт пачку не чаще раза в 1,5 с (до 40 в минуту); 120 — запас на несколько человек за одним адресом оператора. */
+    track: new RateLimiter(120, 60_000),
+  };
+}
+
+export const limits = (g.__limits ??= create());

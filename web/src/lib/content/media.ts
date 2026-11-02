@@ -26,9 +26,12 @@ const SIZES: Record<MediaKind, { main: Box; lg: Box }> = {
 };
 
 export const MAX_UPLOAD_BYTES = 15 * 1024 * 1024;
+/** Больше 40 Мп не берём: картинка-«бомба» (малый файл, огромное разрешение) съела бы гигабайты памяти.
+ * Браузер и так уменьшает снимок перед загрузкой, обычное фото с телефона — 12–24 Мп. */
+const MAX_PIXELS = 40_000_000;
 
 function render(input: Buffer, box: Box) {
-  return sharp(input, { failOn: "error" })
+  return sharp(input, { failOn: "error", limitInputPixels: MAX_PIXELS })
     .rotate() // учесть поворот из EXIF (фото с телефона)
     .resize(box.w, box.h, { fit: box.fit, position: box.fit === "cover" ? sharp.strategy.attention : undefined, withoutEnlargement: box.fit === "inside" })
     .webp({ quality: 82 })
@@ -37,10 +40,11 @@ function render(input: Buffer, box: Box) {
 
 /** Обрабатывает фото и сохраняет две версии: основную и -lg. Возвращает адрес основной (/media/...). */
 export async function saveUpload(input: Buffer, kind: MediaKind, prefix: string) {
-  const meta = await sharp(input).metadata();
+  const meta = await sharp(input, { limitInputPixels: MAX_PIXELS }).metadata();
   if (!meta.format || !["jpeg", "png", "webp", "heif", "avif", "gif", "tiff"].includes(meta.format)) {
     throw new Error("Это не похоже на фото. Подойдут JPG, PNG или WebP.");
   }
+  if ((meta.width ?? 0) * (meta.height ?? 0) > MAX_PIXELS) throw new Error("Фото слишком большое — уменьшите его до 40 Мп.");
   const { main, lg } = SIZES[kind];
   const [small, large] = await Promise.all([render(input, main), render(input, lg)]);
   const hash = createHash("sha1").update(small).digest("hex").slice(0, 10);

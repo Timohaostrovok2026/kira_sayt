@@ -186,8 +186,10 @@ export const SITE_SEED: SiteContent = {
 
 /** Сезон определяет первый экран и подборку «Хиты сезона». Новый год — до 15 января (Кирилл, 03.11). */
 export function currentSeason(d = new Date()) {
-  const m = d.getMonth() + 1;
-  const day = d.getDate();
+  // Дата по Москве: сервер живёт в UTC, иначе сезон сменился бы в 3 часа ночи.
+  const msk = new Date(d.getTime() + 3 * 3600_000);
+  const m = msk.getUTCMonth() + 1;
+  const day = msk.getUTCDate();
   if (m === 10 || (m === 11 && day <= 2)) return "halloween" as const;
   if (m >= 11 || (m === 1 && day <= 15)) return "newyear" as const;
   if (m >= 4 && m <= 6) return "graduation" as const;

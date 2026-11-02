@@ -1,46 +1,12 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
-import { MKAD_BASE, MKAD_PER_KM, SOUND_PRICE, slotRef, type Catalog } from "@/data/catalog";
+import { restoreCart } from "@/data/cart-restore";
+import { buildLines, linesCount, linesTotal, type CartForm, type CartLine, type CartState } from "@/data/cart-lines";
 import { useCatalog } from "@/lib/catalog-context";
 import { track } from "@/lib/track";
 
-export interface CartPackage {
-  id: string;
-  /** Индекс слота пакета → выбранная позиция (для слотов с альтернативами). */
-  choices: Record<number, string>;
-}
-
-export interface CartForm {
-  childAge: string;
-  date: string;
-  place: string;
-  name: string;
-  phone: string;
-  note: string;
-  outsideMkad: boolean;
-  km: number;
-  sound: boolean;
-}
-
-export interface CartState {
-  programs: string[];
-  extras: Record<string, number>;
-  packages: CartPackage[];
-  costumes: string[];
-  form: CartForm;
-}
-
-export interface CartLine {
-  key: string;
-  type: "program" | "extra" | "package" | "costume" | "mkad" | "sound";
-  id: string;
-  title: string;
-  subtitle?: string;
-  qty: number;
-  price: number;
-  fullPrice?: number;
-}
+export type { CartForm, CartLine, CartPackage, CartState } from "@/data/cart-lines";
 
 const EMPTY_FORM: CartForm = {
   childAge: "",
@@ -52,6 +18,7 @@ const EMPTY_FORM: CartForm = {
   outsideMkad: false,
   km: 0,
   sound: false,
+  soundAuto: false,
 };
 
 const EMPTY: CartState = { programs: [], extras: {}, packages: [], costumes: [], form: EMPTY_FORM };
@@ -81,56 +48,6 @@ interface CartApi {
 
 const Ctx = createContext<CartApi | null>(null);
 
-/** Строки корзины. Позиции, которых больше нет на сайте (удалены или скрыты), пропускаем. */
-export function buildLines(s: CartState, cat: Catalog): CartLine[] {
-  const { programById, packageById, extraById, costumeById, anyItem, packagePrice } = cat;
-  const out: CartLine[] = [];
-  for (const id of s.programs) {
-    const p = programById[id];
-    if (p) out.push({ key: `p:${id}`, type: "program", id, title: p.name, subtitle: p.kind, qty: 1, price: p.price });
-  }
-  for (const k of s.packages) {
-    const pk = packageById[k.id];
-    if (!pk) continue;
-    const pr = packagePrice(pk, k.choices);
-    const parts = pk.items.map((it, i) => anyItem(slotRef(it, k.choices?.[i]))?.name).filter(Boolean);
-    out.push({
-      key: `k:${k.id}`,
-      type: "package",
-      id: k.id,
-      title: `Пакет «${pk.name}»`,
-      subtitle: pk.custom ? "Стоимость обсудим" : parts.join(" + "),
-      qty: 1,
-      price: pk.custom ? 0 : pr.price,
-      fullPrice: pk.custom ? undefined : pr.full,
-    });
-  }
-  for (const [id, qty] of Object.entries(s.extras)) {
-    const e = extraById[id];
-    if (e && qty > 0)
-      out.push({ key: `x:${id}`, type: "extra", id, title: e.name, subtitle: e.unit, qty, price: e.price * qty });
-  }
-  for (const id of s.costumes) {
-    const c = costumeById[id];
-    if (c) out.push({ key: `c:${id}`, type: "costume", id, title: c.name, subtitle: "Герой", qty: 1, price: 0 });
-  }
-  if (s.form.outsideMkad) {
-    const km = Math.max(0, s.form.km || 0);
-    out.push({
-      key: "mkad",
-      type: "mkad",
-      id: "e_mkad",
-      title: "Выезд за МКАД",
-      subtitle: `${km} км от МКАД`,
-      qty: 1,
-      price: MKAD_BASE + MKAD_PER_KM * km,
-    });
-  }
-  if (s.form.sound)
-    out.push({ key: "sound", type: "sound", id: "e_sound", title: "Усиленный звук", subtitle: "JBL PartyBox 110 и 2 микрофона", qty: 1, price: SOUND_PRICE });
-  return out;
-}
-
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const cat = useCatalog();
   const { programById, extraById, packageById, costumeById } = cat;
@@ -143,10 +60,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       const raw = localStorage.getItem(KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as Partial<CartState>;
         // Корзину читаем только после гидратации: на сервере localStorage нет, иначе разметка разойдётся.
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setState({ ...EMPTY, ...parsed, form: { ...EMPTY_FORM, ...(parsed.form ?? {}) } });
+        setState(restoreCart(JSON.parse(raw), EMPTY));
       }
     } catch {}
     setReady(true);
@@ -160,9 +76,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [state, ready]);
 
   const lines = useMemo(() => buildLines(state, cat), [state, cat]);
-  const total = useMemo(() => lines.reduce((s, l) => s + l.price, 0), [lines]);
+  const total = useMemo(() => linesTotal(lines), [lines]);
   // Считаем по строкам: удалённые или скрытые в админке позиции из старой корзины не учитываются.
-  const count = lines.filter((l) => l.type !== "mkad" && l.type !== "sound").length;
+  const count = linesCount(lines);
 
   const has = useCallback(
     (type: "program" | "extra" | "package" | "costume", id: string) => {
