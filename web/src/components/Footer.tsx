@@ -20,7 +20,7 @@ export function Footer({ contacts, legal }: { contacts: Contacts; legal?: string
       <div className="wrap pt-16 pb-10 md:pt-24">
         <p className="eyebrow text-rasp-300">Контакты</p>
         <h2 className="h-section mt-3 max-w-xl">
-          Ответим на любой <Accent>вопрос</Accent> за&nbsp;пару минут
+          Ответим на любой <Accent>вопрос</Accent> за&nbsp;15&nbsp;минут
         </h2>
         <ul className="mt-8 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {bands(contacts).map(({ href, label, value, icon: Icon }) => (

@@ -71,7 +71,7 @@ export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => voi
             <PartyPopper size={44} />
           </span>
           <h1 className="h-section mt-6">Заявка №{r.id} отправлена!</h1>
-          <p className="lead mt-3 text-ink-soft">Менеджер напишет вам в течение 15 минут в рабочее время.</p>
+          <p className="lead mt-3 text-ink-soft">Менеджер напишет вам в течение 15 минут. Работаем с 7:00 до 23:00.</p>
           {r.total > 0 && (
             <p className="mt-2 text-[15px] text-ink-soft">
               Ориентировочно <span className="font-bold text-ink tabular-nums">{money(r.total)}</span>
