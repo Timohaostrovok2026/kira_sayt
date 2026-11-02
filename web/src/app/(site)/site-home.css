@@ -233,7 +233,8 @@
 
 /* ---- подвал ---- */
 .foot { background: var(--ink-deep); color: #fff; padding-block: clamp(64px, 9vw, 110px) 120px; }
-.foot .mega { font-family: var(--display); font-weight: 400; text-transform: uppercase; line-height: 0.94; font-size: clamp(36px, 10.2vw, 150px); color: #fff; text-align: center; white-space: nowrap; }
+.foot .mega { display: flex; justify-content: center; margin-bottom: 22px; }
+.foot .mega-logo { display: block; width: min(560px, 82%); height: auto; }
 .foot .brace { text-align: center; margin: 12px 0 34px; color: var(--pink-soft); }
 .bands { display: flex; flex-wrap: wrap; gap: 14px; justify-content: center; margin-bottom: 26px; }
 .band { display: inline-flex; flex-direction: column; gap: 2px; min-width: 0; padding: 16px 26px; border-radius: 999px; text-decoration: none; font-weight: 800; transition: transform 0.25s; }

@@ -1,7 +1,8 @@
 import type { Contacts } from "@/data/site";
 import { CopyPhone } from "./CopyPhone";
+import { Logo } from "./Logo";
 
-/** Подвал по черновику Кирилла: огромное «Улыбайся» и пять цветных «таблеток» контактов. */
+/** Подвал по черновику Кирилла: крупный логотип и пять цветных «таблеток» контактов. */
 export function Footer({ contacts, legal }: { contacts: Contacts; legal?: string }) {
   const bands = [
     { href: `tel:${contacts.phoneRaw}`, label: "Позвонить", value: contacts.phone },
@@ -13,9 +14,9 @@ export function Footer({ contacts, legal }: { contacts: Contacts; legal?: string
   return (
     <footer id="kontakty" className="foot scroll-mt-20">
       <div className="wrap">
-        <p className="mega" aria-hidden="true">
-          Улыбайся
-        </p>
+        <div className="mega">
+          <Logo height={240} alt="" className="mega-logo" />
+        </div>
         <div className="bands">
           {bands.map((b) => (
             <a key={b.label} className="band" href={b.href} target={b.href.startsWith("http") ? "_blank" : undefined} rel="noopener">

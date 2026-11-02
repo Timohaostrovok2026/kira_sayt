@@ -105,10 +105,8 @@
   max-width: 1200px; margin-inline: auto; display: flex; align-items: center; gap: 14px; justify-content: space-between;
   min-height: 54px; padding: 0 8px 0 20px; border-radius: 999px; background: linear-gradient(90deg, var(--rasp-700), var(--hot)); color: #fff;
 }
-.logo { display: inline-flex; flex-direction: column; align-items: flex-start; gap: 3px; color: inherit; text-decoration: none; font-family: var(--display); font-size: 22px; letter-spacing: 0.03em; text-transform: uppercase; }
-.logo .lg { display: inline-flex; align-items: center; gap: 9px; line-height: 1; }
-.logo i { width: 12px; height: 12px; border-radius: 50%; background: var(--lime); display: inline-block; }
-.logo small { font-family: var(--body); font-weight: 600; font-size: 9.5px; line-height: 1; letter-spacing: 0.12em; text-transform: none; color: var(--pink-soft); margin-left: 21px; }
+/* логотип Кирилла (белый SVG): высота задаёт размер, ширина — по пропорции */
+.logo { display: block; height: 44px; width: auto; }
 .nav-links { display: none; gap: 2px; }
 .nav-links a { padding: 8px 14px; border-radius: 999px; font-weight: 700; font-size: 14px; color: #fff; text-decoration: none; opacity: 0.9; }
 .nav-links a:hover, .nav-links a[aria-current="page"] { background: rgba(255, 255, 255, 0.18); opacity: 1; }
@@ -116,7 +114,7 @@
 .nav-req b { background: var(--ink-deep); color: var(--lime); min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: inline-grid; place-items: center; font-size: 12px; }
 .nav-call { display: inline-flex; align-items: center; justify-content: center; width: 42px; min-height: 40px; border-radius: 999px; background: var(--lime); color: var(--ink-deep); }
 @media (min-width: 900px) { .nav-links { display: flex; } .nav-req { display: inline-flex; } .nav-call { display: none; } }
-@media (max-width: 380px) { .logo { font-size: 18px; } .nav { padding-left: 14px; gap: 8px; } .logo small { font-size: 8.5px; margin-left: 17px; } }
+@media (max-width: 380px) { .logo { height: 40px; } .nav { padding-left: 14px; gap: 8px; } }
 
 /* ---- нижнее меню (телефон) ---- */
 .mnav {
