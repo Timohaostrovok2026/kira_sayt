@@ -62,7 +62,9 @@ remote "sudo -u uly -H bash -lc 'cd $APP && set -a && . /etc/ulybaysya.env && se
 remote "rm -rf $APP/.next/cache/images"
 
 echo "→ Перезапуск"
-remote "systemctl restart ulybaysya && sleep 5 && systemctl is-active ulybaysya && curl -s -o /dev/null -w 'сайт: %{http_code}\n' --max-time 20 http://127.0.0.1:3000/"
+# Кэш ответов Next (.next/server/route-cache) переживает сборку, а старый процесс пишет в него, пока идёт новая:
+# 03.11 так осталась старая картинка превью ссылки. Сбрасываем между остановкой и запуском — новый процесс наполнит заново.
+remote "systemctl stop ulybaysya && rm -rf $APP/.next/server/route-cache && systemctl start ulybaysya && sleep 5 && systemctl is-active ulybaysya && curl -s -o /dev/null -w 'сайт: %{http_code}\n' --max-time 20 http://127.0.0.1:3000/"
 # Accept как у браузера: Next кэширует сжатое фото отдельно для каждого формата (webp/jpeg).
 # Прогрев: сервер заранее сжимает крупные фото (первый экран, галерея) под все размеры экранов,
 # чтобы первый посетитель не ждал. Ошибки прогрева выкладку не валят.
