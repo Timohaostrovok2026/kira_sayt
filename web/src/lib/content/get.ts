@@ -10,6 +10,8 @@ export const CATALOG_TAG = "catalog";
 /**
  * Что уходит на публичный сайт: скрытые позиции остаются только как «скелет» (имя, цена, фото) —
  * на них могут ссылаться пакеты и обложки, но описания не раскрываем.
+ * Раздела «Костюмы» на сайте нет (02.11): у героев нужны только имя и фото (обложки, старые корзины),
+ * описания 100+ героев утяжеляли каждую страницу на сотни килобайт.
  */
 function publicData(d: CatalogData): CatalogData {
   const strip = <T extends { hidden?: boolean }>(x: T, keep: (keyof T)[]) =>
@@ -18,8 +20,8 @@ function publicData(d: CatalogData): CatalogData {
     programs: d.programs.map((p) => strip(p, ["id", "name", "kind", "price", "cover", "photo", "hidden"])),
     extras: d.extras.map((e) => strip(e, ["id", "name", "kind", "group", "price", "unit", "photo", "hidden"])),
     packages: d.packages.filter((k) => !k.hidden),
-    costumes: d.costumes.map((c) => strip(c, ["id", "name", "cat", "photo", "hidden"])),
-    costumeCats: d.costumeCats,
+    costumes: d.costumes.map((c) => ({ id: c.id, name: c.name, cat: "", t: "", ...(c.photo ? { photo: c.photo } : {}), ...(c.hidden ? { hidden: true } : {}) })),
+    costumeCats: [],
   };
 }
 

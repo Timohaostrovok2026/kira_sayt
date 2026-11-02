@@ -54,7 +54,7 @@ chmod 750 /var/lib/ulybaysya; chmod 700 /var/backups/ulybaysya
 echo "  настройки сайта /etc/ulybaysya.env (секреты заполняет владелец)"
 if [ ! -f /etc/ulybaysya.env ]; then
   cat > /etc/ulybaysya.env <<'ENV'
-NEXT_PUBLIC_SITE_URL=https://ulybajsja.online
+NEXT_PUBLIC_SITE_URL=https://ulybajsja.ru
 DATA_DIR=/var/lib/ulybaysya
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=

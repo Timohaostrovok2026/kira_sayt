@@ -25,10 +25,15 @@ async function sendTelegram(text: string) {
     // Из РФ Telegram иногда «молчит» — без таймаута запрос висел бы минутами.
     signal: AbortSignal.timeout(10_000),
   });
-  // Код ответа — чтобы в журнале отличать 401/400 (настройки) от молчащей сети. URL с токеном не пишем.
-  if (!r.ok) console.warn(`[leads] Telegram ответил ${r.status}`);
+  // Код и пояснение Telegram («chat not found» и т. п.) — чтобы в журнале отличать ошибку настроек
+  // от молчащей сети. URL с токеном не пишем, в пояснении его нет.
+  if (!r.ok) {
+    const why = await r.json().then((j: { description?: unknown }) => String(j.description ?? ""), () => "");
+    console.warn(`[leads] Telegram ответил ${r.status}${why ? `: ${why.slice(0, 200)}` : ""}`);
+    return false;
+  }
   await r.body?.cancel();
-  return r.ok;
+  return true;
 }
 
 /** Отправляет заявку в Telegram с повторами; при успехе помечает доставленной. */

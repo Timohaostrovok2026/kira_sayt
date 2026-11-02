@@ -1,57 +1,88 @@
-import { ArrowUpRight, Star } from "lucide-react";
-import type { SiteContent } from "@/data/site";
-import { plural } from "@/lib/format";
-import { SectionHead } from "@/components/cards";
-import { Accent } from "@/components/Accent";
-import { ReviewCard } from "./ReviewCard";
+"use client";
 
-/** Настоящие отзывы с Яндекс Карт (редактируются в админке). */
-export function Reviews({ site }: { site: SiteContent }) {
-  if (!site.reviews.length) return null;
+import { useState } from "react";
+import type { Review, SiteContent } from "@/data/site";
+import { plural } from "@/lib/format";
+import { SectionHead, Stars } from "@/components/cards";
+
+function ReviewItem({ r }: { r: Review }) {
+  const long = r.text.length > 300;
+  const [open, setOpen] = useState(false);
   return (
-    <section id="otzyvy" className="scroll-mt-16 bg-rasp-50 py-14 md:py-20">
+    <article className="rev">
+      <Stars />
+      <p className={long && !open ? "clamp" : undefined}>«{r.text}»</p>
+      {long && (
+        <button type="button" className="more" onClick={() => setOpen(!open)}>
+          {open ? "Свернуть" : "Читать полностью"}
+        </button>
+      )}
+      <div className="who">
+        <span className="av" aria-hidden="true">
+          {r.name.charAt(0)}
+        </span>
+        <span>
+          {r.name}
+          <small>{[r.date, r.topic, r.source].filter(Boolean).join(" · ")}</small>
+        </span>
+      </div>
+    </article>
+  );
+}
+
+/** Отзывы: плашки Профи.ру и Яндекс Карт, вкладки, Профи.ру — первым (черновик Кирилла v11). */
+export function Reviews({ site }: { site: SiteContent }) {
+  const [tab, setTab] = useState<"p" | "y">("p");
+  const profi = site.reviews.filter((r) => /профи/i.test(r.source));
+  const yandex = site.reviews.filter((r) => !/профи/i.test(r.source));
+  const list = tab === "p" ? profi : yandex;
+  const n = (k: number) => `${k} ${plural(k, "отзыв", "отзыва", "отзывов")}`;
+  return (
+    <section id="otzyvy" className="sec cen scroll-mt-20">
       <div className="wrap">
-        <SectionHead
-          eyebrow="Отзывы"
-          title={<>Родители возвращаются <Accent>снова</Accent></>}
-          action={
-            <a
-              href={site.yandexUrl}
-              target="_blank"
-              rel="noopener"
-              data-track="reviews_yandex"
-              className="card lift inline-flex items-center gap-3 self-start px-4 py-3 md:self-auto"
-            >
-              <span className="font-display text-[32px] font-bold leading-none">{site.yandexRating}</span>
-              <span className="flex flex-col">
-                <span className="flex text-star" aria-hidden="true">
-                  {Array.from({ length: 5 }, (_, i) => (
-                    <Star key={i} size={16} fill="currentColor" strokeWidth={0} />
-                  ))}
-                </span>
-                <span className="text-[13px] font-semibold text-ink-soft">
-                  {site.yandexReviewsCount} {plural(site.yandexReviewsCount, "отзыв", "отзыва", "отзывов")} на Яндекс Картах
-                </span>
-              </span>
-              <ArrowUpRight size={18} className="text-rasp-500" />
-            </a>
-          }
-        />
-        {/* Телефон: лента со свайпом. Ноутбук: сетка, карточки одной высоты. */}
-        <div className="rail items-start md:!mx-0 md:!grid md:!grid-flow-row md:!grid-cols-2 md:!px-0 lg:!grid-cols-4">
-          {site.reviews.map((r) => (
-            <ReviewCard key={r.name + r.date} r={r} />
+        <SectionHead brace="говорят родители" title="Родители возвращаются снова" />
+        <div className="rplq">
+          <a className="ymap ymap--p" href={site.profiUrl} target="_blank" rel="noopener" data-track="reviews_profi">
+            <span className="ycnt num">{site.profiRating}</span>
+            <span>
+              <Stars />
+              <b>{n(site.profiReviewsCount)} на Профи.ру</b>
+              <small>Читать все отзывы →</small>
+            </span>
+          </a>
+          <a className="ymap" href={site.yandexUrl} target="_blank" rel="noopener" data-track="reviews_yandex">
+            <span className="ycnt num">{site.yandexRating}</span>
+            <span>
+              <Stars />
+              <b>{n(site.yandexReviewsCount)} на Яндекс Картах</b>
+              <small>Читать все отзывы →</small>
+            </span>
+          </a>
+        </div>
+        <div className="rvtabs" role="tablist">
+          <button type="button" role="tab" aria-selected={tab === "p"} onClick={() => setTab("p")}>
+            Профи.ру
+          </button>
+          <button type="button" role="tab" aria-selected={tab === "y"} onClick={() => setTab("y")}>
+            Яндекс Карты
+          </button>
+        </div>
+        <div className={`revs${tab === "p" ? " revs--p" : ""}`} role="tabpanel">
+          {list.map((r, i) => (
+            <ReviewItem key={`${tab}${i}`} r={r} />
           ))}
         </div>
-        <a
-          href={site.yandexUrl}
-          target="_blank"
-          rel="noopener"
-          data-track="reviews_all"
-          className="btn btn-soft mt-6 w-full md:w-auto"
-        >
-          Все отзывы на Яндекс Картах <ArrowUpRight size={18} />
-        </a>
+        <div className="cta-center">
+          {tab === "p" ? (
+            <a className="pill pill--hot" href={site.profiUrl} target="_blank" rel="noopener" data-track="reviews_profi_all">
+              Все {site.profiReviewsCount} {plural(site.profiReviewsCount, "отзыв", "отзыва", "отзывов")} на Профи.ру
+            </a>
+          ) : (
+            <a className="pill pill--hot" href={site.yandexUrl} target="_blank" rel="noopener" data-track="reviews_yandex_all">
+              Все отзывы на Яндекс Картах
+            </a>
+          )}
+        </div>
       </div>
     </section>
   );

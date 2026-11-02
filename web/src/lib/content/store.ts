@@ -2,6 +2,7 @@ import "server-only";
 import type { CatalogData } from "@/data/catalog";
 import type { SiteContent } from "@/data/site";
 import { getDb } from "@/lib/db";
+import { MIGRATIONS } from "@/data/migrations";
 import { seedCatalog, seedSite } from "./seed";
 
 /**
@@ -42,8 +43,51 @@ function db() {
   const seed: Record<ContentKey, unknown> = { ...cat, site: seedSite() };
   const ins = d.prepare("INSERT OR IGNORE INTO content (key, value, updated) VALUES (?, ?, ?)");
   for (const k of KEYS) ins.run(k, JSON.stringify(seed[k]), Date.now());
+  migrate(d);
   ready = true;
   return d;
+}
+
+/**
+ * Разовые правки контента (src/data/migrations.ts): каждая — один раз, старые значения — в историю.
+ * Проверка отметки, запись и отметка — одной транзакцией: два процесса сборки не применят её дважды,
+ * а сбой посередине откатит всё (иначе повтор затёр бы правки, сделанные после неё в админке).
+ */
+function migrate(d: ReturnType<typeof getDb>) {
+  d.exec("CREATE TABLE IF NOT EXISTS content_migrations (id TEXT PRIMARY KEY, ts INTEGER NOT NULL)");
+  for (const m of MIGRATIONS) {
+    d.exec("BEGIN IMMEDIATE");
+    try {
+      if (!d.prepare("SELECT 1 FROM content_migrations WHERE id = ?").get(m.id)) {
+        const { catalog, site } = rowsToContent(d.prepare("SELECT key, value FROM content").all() as Row[]);
+        writeRows(d, m.apply({ programs: catalog.programs, extras: catalog.extras, packages: catalog.packages, site }));
+        d.prepare("INSERT OR IGNORE INTO content_migrations (id, ts) VALUES (?, ?)").run(m.id, Date.now());
+        console.log(`[content] миграция ${m.id} применена`);
+      }
+      d.exec("COMMIT");
+    } catch (e) {
+      d.exec("ROLLBACK");
+      throw e;
+    }
+  }
+  memo = null;
+}
+
+type Row = { key: ContentKey; value: string };
+
+function rowsToContent(rows: Row[]): ContentAll {
+  const m = Object.fromEntries(rows.map((r) => [r.key, JSON.parse(r.value)])) as Record<ContentKey, never>;
+  return {
+    catalog: {
+      programs: m.programs ?? [],
+      extras: m.extras ?? [],
+      packages: m.packages ?? [],
+      costumes: m.costumes ?? [],
+      costumeCats: m.costumeCats ?? [],
+    },
+    // Новые поля текстов (галерея, отзывы…) берём из начального наполнения, пока их не сохранили.
+    site: { ...seedSite(), ...((m.site as object | undefined) ?? {}) },
+  };
 }
 
 let memo: { stamp: string; value: ContentAll } | null = null;
@@ -58,19 +102,7 @@ export function readContentShared(): Readonly<ContentAll> {
   const d = db();
   const stamp = d.prepare("SELECT group_concat(key || ':' || updated) AS s FROM (SELECT key, updated FROM content ORDER BY key)").get() as { s: string };
   if (memo && memo.stamp === stamp.s) return memo.value;
-  const rows = d.prepare("SELECT key, value FROM content").all() as { key: ContentKey; value: string }[];
-  const m = Object.fromEntries(rows.map((r) => [r.key, JSON.parse(r.value)])) as Record<ContentKey, never>;
-  const value: ContentAll = {
-    catalog: {
-      programs: m.programs ?? [],
-      extras: m.extras ?? [],
-      packages: m.packages ?? [],
-      costumes: m.costumes ?? [],
-      costumeCats: m.costumeCats ?? [],
-    },
-    // Новые поля текстов (галерея, отзывы…) берём из начального наполнения, пока их не сохранили.
-    site: { ...seedSite(), ...((m.site as object | undefined) ?? {}) },
-  };
+  const value = rowsToContent(d.prepare("SELECT key, value FROM content").all() as Row[]);
   memo = { stamp: stamp.s, value };
   return value;
 }
@@ -78,9 +110,21 @@ export function readContentShared(): Readonly<ContentAll> {
 /** Записать несколько ключей одной транзакцией (старые значения уходят в историю). */
 export function writeContent(patch: Partial<Record<ContentKey, unknown>>) {
   const d = db();
-  const now = Date.now();
   d.exec("BEGIN IMMEDIATE");
   try {
+    writeRows(d, patch);
+    d.exec("COMMIT");
+  } catch (e) {
+    d.exec("ROLLBACK");
+    throw e;
+  }
+  memo = null;
+}
+
+/** Запись ключей с историей — без своей транзакции (её открывает вызывающий). */
+function writeRows(d: ReturnType<typeof getDb>, patch: Partial<Record<ContentKey, unknown>>) {
+  const now = Date.now();
+  {
     for (const [key, value] of Object.entries(patch)) {
       if (!KEYS.includes(key as ContentKey) || value === undefined) continue;
       const old = d.prepare("SELECT value, updated FROM content WHERE key = ?").get(key) as { value: string; updated: number } | undefined;
@@ -98,10 +142,5 @@ export function writeContent(patch: Partial<Record<ContentKey, unknown>>) {
         stamp,
       );
     }
-    d.exec("COMMIT");
-  } catch (e) {
-    d.exec("ROLLBACK");
-    throw e;
   }
-  memo = null;
 }

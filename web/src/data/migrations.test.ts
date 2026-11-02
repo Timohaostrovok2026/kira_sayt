@@ -1,0 +1,80 @@
+// Миграция черновика Кирилла v11 меняет цены и состав пакетов в боевой базе — проверяем, что точечно.
+import { test } from "node:test";
+import assert from "node:assert/strict";
+import { MIGRATIONS, type ContentSnapshot } from "./migrations.ts";
+import { SITE_SEED } from "./site.ts";
+import type { Extra, Package, Program } from "./catalog.ts";
+
+const prog = (id: string, extra: Partial<Program> = {}): Program => ({
+  id, name: id, kind: "Анимация", group: "", a: 1, b: 8, price: 1000, dur: "", art: "", how: "", inc: "старое", ...extra,
+});
+const ex = (id: string, extra: Partial<Extra> = {}): Extra => ({ id, name: id, kind: "Опция", group: "Опции и услуги", price: 100, ...extra });
+const pk = (id: string, extra: Partial<Package> = {}): Package => ({
+  id, name: id, tag: "", disc: 10, items: [], override: null, custom: false, note: "", ...extra,
+});
+
+function snapshot(): ContentSnapshot {
+  return {
+    programs: [prog("p_anim", { price: 8900 }), prog("p_halloween"), prog("p_ded")],
+    extras: [ex("e_ice", { price: 17900 }), ex("e_aqua", { price: 100 }), ex("e_snow"), ex("e_coord", { price: 7000 }), ex("xmvlk0qi0")],
+    packages: [
+      pk("k_start", { name: "Улыбка «х2»", tag: "Анимация, VIP-костюм, пузыри.", items: [{ ref: "xmvlk0qi0", qty: 1 }, { ref: "e_vip", qty: 1 }] }),
+      pk("k_all", { items: [{ ref: "e_cryo30", qty: 1 }] }),
+    ],
+    site: { ...structuredClone(SITE_SEED), reviews: [{ name: "Антон П.", date: "21 сентября", text: "Спасибо", source: "Яндекс Карты" }] },
+  };
+}
+
+const v11 = MIGRATIONS.find((m) => m.id === "2026-11-02-kirill-v11")!;
+
+test("v11: скрывает Хэллоуин и бывшие допы, а не удаляет", () => {
+  const out = v11.apply(snapshot());
+  assert.equal(out.programs!.length, 3);
+  assert.equal(out.programs!.find((p) => p.id === "p_halloween")!.hidden, true);
+  assert.equal(out.extras!.find((e) => e.id === "e_snow")!.hidden, true);
+  assert.equal(out.extras!.find((e) => e.id === "xmvlk0qi0")!.hidden, true);
+  assert.equal(out.extras!.find((e) => e.id === "e_coord")!.hidden, undefined);
+});
+
+test("v11: меняет только перечисленные цены", () => {
+  const out = v11.apply(snapshot());
+  assert.equal(out.extras!.find((e) => e.id === "e_ice")!.price, 21900);
+  assert.equal(out.extras!.find((e) => e.id === "e_aqua")!.price, 500);
+  assert.equal(out.extras!.find((e) => e.id === "e_coord")!.price, 7000);
+  assert.equal(out.programs!.find((p) => p.id === "p_anim")!.price, 8900);
+  assert.match(out.programs!.find((p) => p.id === "p_ded")!.inc, /Снежный фокус от Дедушки Мороза: доплата 2 000 ₽/);
+});
+
+test("v11: «Счастье» без VIP, «Подарок» со слотом шоу", () => {
+  const out = v11.apply(snapshot());
+  const happy = out.packages!.find((k) => k.id === "k_start")!;
+  assert.equal(happy.name, "Счастье");
+  assert.ok(!happy.items.some((it) => it.ref === "e_vip"));
+  assert.ok(!/VIP/.test(happy.tag));
+  const gift = out.packages!.find((k) => k.id === "k_all")!;
+  assert.deepEqual(gift.items[1], { ref: "e_cryo45", qty: 1, alts: ["e_cryo30", "e_soap", "e_paper"] });
+});
+
+test("v11: отзывы Яндекса остаются, Профи.ру не задваиваются при повторе", () => {
+  const once = v11.apply(snapshot());
+  const twice = v11.apply({ ...snapshot(), site: once.site! });
+  const yandex = twice.site!.reviews.filter((r) => r.source === "Яндекс Карты");
+  const profi = twice.site!.reviews.filter((r) => r.source === "Профи.ру");
+  assert.equal(yandex.length, 1);
+  assert.equal(profi.length, 10);
+  assert.equal(twice.site!.gallery.length, 29);
+});
+
+const answers = MIGRATIONS.find((m) => m.id === "2026-11-03-kirill-answers")!;
+
+test("03.11: текст «Счастья» и «100+ костюмов», остальное не трогает", () => {
+  const snap = snapshot();
+  snap.programs[0] = prog("p_anim", { inc: "Любой персонаж из 200+ костюмов\nИнтерактив" });
+  const out = answers.apply(snap);
+  assert.match(out.packages!.find((k) => k.id === "k_start")!.tag, /^Счастье в двойном размере/);
+  assert.equal(out.packages!.find((k) => k.id === "k_all")!.items[0].ref, "e_cryo30");
+  assert.equal(out.programs!.find((p) => p.id === "p_anim")!.inc, "Любой персонаж из 100+ костюмов\nИнтерактив");
+  assert.equal(out.programs!.find((p) => p.id === "p_ded")!.inc, "старое");
+  assert.equal(out.extras, undefined);
+  assert.equal(out.site, undefined);
+});

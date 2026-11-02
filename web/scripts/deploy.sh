@@ -67,7 +67,7 @@ remote "systemctl restart ulybaysya && sleep 5 && systemctl is-active ulybaysya 
 # Прогрев: сервер заранее сжимает крупные фото (первый экран, галерея) под все размеры экранов,
 # чтобы первый посетитель не ждал. Ошибки прогрева выкладку не валят.
 echo "→ Прогрев фото"
-remote 'for p in / /pakety /kostyumy /sobrat; do curl -s --max-time 20 "http://127.0.0.1:3000$p"; done \
+remote 'for p in / /pakety /korzina /sobrat; do curl -s --max-time 20 "http://127.0.0.1:3000$p"; done \
   | grep -o "/_next/image?url=[^\" ]*" | sed "s/&amp;/\&/g" | sort -u \
   | xargs -P 4 -I{} curl -s -o /dev/null --max-time 30 -H "Accept: image/avif,image/webp,*/*" "http://127.0.0.1:3000{}"; echo "  готово"' || true
-echo "✓ Готово: https://ulybajsja.online (по IP: https://${HOST#*@})"
+echo "✓ Готово: https://ulybajsja.ru (по IP: https://${HOST#*@})"

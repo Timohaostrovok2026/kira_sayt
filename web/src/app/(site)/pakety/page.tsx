@@ -8,5 +8,11 @@ export const metadata: Metadata = {
 };
 
 export default function PaketyPage() {
-  return <PackagesView />;
+  return (
+    <section className="sec dark">
+      <div className="wrap">
+        <PackagesView />
+      </div>
+    </section>
+  );
 }

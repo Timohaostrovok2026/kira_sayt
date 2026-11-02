@@ -63,8 +63,8 @@ function lineText(l: CartLine, cat: Catalog) {
     return `• ${l.title}: ${l.subtitle} — ${money(l.price)}`;
   }
   if (l.type === "extra") {
-    const e = cat.extraById[l.id];
-    const q = isPerUnit(e?.unit) && l.qty > 1 ? ` × ${l.qty}` : "";
+    // «Добавить» у любого допа прибавляет ещё штуку (v11) — количество показываем всегда, иначе цена двойная без пояснения.
+    const q = l.qty > 1 ? ` × ${l.qty}` : "";
     return `• ${l.title}${q} — ${money(l.price)}`;
   }
   return `• ${l.title} — ${money(l.price)}`;

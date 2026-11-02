@@ -1,13 +1,10 @@
-import type { Metadata } from "next";
-import { CostumesCatalog } from "@/components/kostyumy/CostumesCatalog";
+import { redirect } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: "Костюмы и герои",
-  description:
-    "110+ героев для детского праздника: принцессы, супергерои, Лабубу, Майнкрафт, щенки-спасатели и другие. Выберите любимого — он подойдёт к любой анимационной программе.",
-  alternates: { canonical: "/kostyumy" },
-};
-
+/**
+ * Раздел «Костюмы» убран с сайта (Кирилл, 02.11: авторские права на персонажей).
+ * Комплект героев присылает менеджер после заявки. Старые ссылки ведут на главную.
+ * Код каталога — в docs/_archive/code-2026-11-02/, данные костюмов остаются в базе.
+ */
 export default function KostyumyPage() {
-  return <CostumesCatalog />;
+  redirect("/");
 }

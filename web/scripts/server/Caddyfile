@@ -16,12 +16,13 @@
 	reverse_proxy 127.0.0.1:3000
 }
 
-ulybajsja.online {
+ulybajsja.ru {
 	import site
 }
 
-www.ulybajsja.online {
-	redir https://ulybajsja.online{uri} permanent
+# Старый домен .online и www — навсегда на основной .ru (ссылки уже разошлись в Telegram и картах).
+www.ulybajsja.ru, ulybajsja.online, www.ulybajsja.online {
+	redir https://ulybajsja.ru{uri} permanent
 }
 
 # Запасной вход по IP: сертификат Let's Encrypt на адрес (только профиль shortlived, 6 дней, продлевается сам).

@@ -270,7 +270,7 @@ function CostumesTab({ onEdit }: TabProps) {
     thumb: cat.costumeImg(c.id),
     filter: c.cat,
     search: c.t,
-    view: `/kostyumy?q=${encodeURIComponent(c.name)}`,
+    // Без ссылки «на сайте»: раздела «Костюмы» на сайте нет (02.11), /kostyumy ведёт на главную.
   }));
   return (
     <ItemList

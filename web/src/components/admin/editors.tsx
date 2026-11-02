@@ -430,7 +430,6 @@ export function CostumeEditor({ id, onClose, cat: defaultCat }: { id: string | n
       id={id}
       name={d.name ?? ""}
       title={id ? d.name || "Герой" : "Новый герой"}
-      view={id ? `/kostyumy?q=${encodeURIComponent(d.name ?? "")}` : undefined}
       ed={ed}
       onClose={onClose}
     >

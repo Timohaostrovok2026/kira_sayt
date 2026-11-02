@@ -1,182 +1,60 @@
 import Link from "next/link";
-import type { CSSProperties } from "react";
-import { ArrowRight, Sparkles } from "lucide-react";
-import { AGE_GROUPS, minPrice, type Catalog } from "@/data/catalog";
-import { money } from "@/lib/format";
 import { Photo } from "@/components/Photo";
-import { splitWords } from "@/components/SplitWords";
-import { Accent } from "@/components/Accent";
-import { HeroScene } from "./HeroScene";
-import { Marquee } from "./Marquee";
-import { Smile } from "./Smile";
 
-/** Мягкая маска по краям: фото на малиновом фоне растворяются в сцене. */
-const FADE = {
-  maskImage: "radial-gradient(closest-side, black 70%, transparent 100%)",
-  WebkitMaskImage: "radial-gradient(closest-side, black 70%, transparent 100%)",
-};
-
-// depth — насколько герой «дальше» (сильнее отстаёт при прокрутке и движении мыши).
-const NY_HEROES = [
-  { src: "/img/photos/elf.webp", alt: "Эльф", w: 1024, h: 1536, depth: 22, cls: "left-[2%] top-[14%] w-[34%] lg:left-[-4%] lg:w-[44%]" },
-  { src: "/img/photos/grinch.webp", alt: "Гринч", w: 1086, h: 1448, depth: 26, cls: "right-[0%] top-[12%] w-[38%] lg:right-[-4%] lg:w-[46%]" },
-  { src: "/img/photos/ded-moroz-2.webp", alt: "Дед Мороз", w: 900, h: 1600, depth: 10, cls: "left-1/2 top-0 z-10 w-[34%] -translate-x-1/2 lg:w-[50%]" },
-];
-
-/** Сдвиг слоя по переменным от HeroScene. */
-function depth(d: number): CSSProperties {
-  return {
-    transform: `translate3d(calc(var(--px, 0) * ${-d * 0.5}px), calc(var(--py, 0) * ${-d * 0.3}px + var(--sy, 0) * ${d * 2}px), 0)`,
-    transition: "transform 0.5s cubic-bezier(0.22, 1, 0.36, 1)",
-  };
+export interface HeroPhoto {
+  src: string;
+  alt: string;
 }
 
-/** Снег: фиксированный «случайный» узор, чтобы сервер и браузер рисовали одно и то же. */
-const FLAKES = Array.from({ length: 22 }, (_, i) => {
-  const r = (n: number) => ((Math.sin(i * 97.13 + n * 13.7) + 1) / 2) % 1;
-  return {
-    left: `${(r(1) * 100).toFixed(1)}%`,
-    size: 3 + Math.round(r(2) * 5),
-    opacity: 0.35 + r(3) * 0.5,
-    d: `${(11 + r(4) * 10).toFixed(1)}s`,
-    delay: `${(-r(5) * 20).toFixed(1)}s`,
-    sway: `${Math.round((r(6) - 0.5) * 60)}px`,
-  };
-});
-
-function Snow() {
+/**
+ * Первый экран по черновику Кирилла v11: «Поздравляем с праздником!», две кнопки,
+ * три героя сезона медленно парят. В Новый год — наклейка «Новогодний сезон» и плашка «Даты на декабрь».
+ */
+export function Hero({ photos, newYear, telegram }: { photos: HeroPhoto[]; newYear: boolean; telegram: string }) {
   return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
-      {FLAKES.map((f, i) => (
-        <span
-          key={i}
-          className="snowflake"
-          style={{ left: f.left, width: f.size, height: f.size, opacity: f.opacity, "--d": f.d, "--delay": f.delay, "--sway": f.sway } as CSSProperties}
-        />
-      ))}
-    </div>
-  );
-}
-
-const COLLAGE = ["h025", "h042", "h016", "h051", "h010", "h076"];
-
-export function Hero({ newYear, cat }: { newYear: boolean; cat: Catalog }) {
-  const { programs, costumeImg } = cat;
-  // Видео-поздравление — не праздник, в «от» его не считаем.
-  const from = minPrice(programs.filter((p) => p.id !== "p_video"));
-  const ded = cat.programById.p_ded;
-  return (
-    <section className="stage relative overflow-hidden">
-      {/* мягкие световые пятна, как студийный свет */}
-      <div aria-hidden="true" className="pointer-events-none absolute -left-40 top-20 h-[420px] w-[420px] rounded-full bg-rasp-500/25 blur-[120px]" />
-      <div aria-hidden="true" className="pointer-events-none absolute -right-32 bottom-0 h-[380px] w-[380px] rounded-full bg-rasp-400/15 blur-[120px]" />
-      {newYear && <Snow />}
-
-      <div className="wrap relative grid items-center gap-1 pt-2 pb-7 md:pt-10 lg:grid-cols-[1.05fr_1fr] lg:gap-10 lg:pt-16 lg:pb-16">
-        <div className="relative z-10">
-          {/* Сезонная плашка видна и на телефоне: в Новый год ведёт к новогодним программам */}
-          {newYear ? (
-            <Link
-              href={`/sobrat?kind=${encodeURIComponent("Новый год")}`}
-              data-track="hero_season"
-              className="mb-5 inline-flex items-center gap-2 rounded-full bg-white/10 py-1.5 pr-4 pl-1.5 text-[14px] font-semibold ring-1 ring-white/15 backdrop-blur transition-colors hover:bg-white/15"
-            >
-              <span className="shrink-0 whitespace-nowrap rounded-full bg-rasp-500 px-2.5 py-0.5 text-[12px] font-bold">Новый год</span>
-              {/* На 375–390 px полная фраза не влезает в одну строку пилюли */}
-              <span className="sm:hidden">Декабрь уже бронируют</span>
-              <span className="hidden sm:inline">Даты на декабрь уже бронируют</span>
-              <ArrowRight size={16} className="shrink-0" />
-            </Link>
-          ) : (
-            <p className="mb-5 hidden items-center gap-2 rounded-full bg-white/10 py-1.5 pr-4 pl-1.5 text-[14px] font-semibold ring-1 ring-white/15 backdrop-blur sm:inline-flex">
-              <span className="rounded-full bg-rasp-500 px-2.5 py-0.5 text-[12px] font-bold">Каждый день</span>
-              Праздники в Москве и области
-            </p>
-          )}
-          {/* Слова заголовка выезжают по очереди сразу при загрузке (CSS, без ожидания скриптов) */}
-          <h1 className="h-hero split-now">
-            {splitWords(
-              <>
-                Праздник, который дети <Accent>запомнят</Accent>
-              </>,
-            )}
-          </h1>
-          <p className="lead mt-5 max-w-[34ch] animate-rise text-white/75 [animation-delay:.35s]">
-            110+ героев, квесты и шоу. Цены сразу на сайте, заявка в&nbsp;один клик.
-          </p>
-          <div className="mt-7 flex animate-rise flex-col gap-3 [animation-delay:.45s] sm:flex-row">
-            <Link href="/sobrat" className="btn btn-lg btn-accent" data-track="hero_build">
-              <Sparkles size={20} /> Собрать праздник
-            </Link>
-            <Link href="/pakety" className="btn btn-lg btn-ghost text-white" data-track="hero_packs">
-              Готовые пакеты <ArrowRight size={20} />
-            </Link>
-          </div>
-          <p className="mt-4 animate-rise text-[14px] text-white/55 [animation-delay:.55s]">
-            Программы от <b className="font-semibold text-white">{money(from)}</b> · артисты 19–23 лет · 1700+ праздников
-          </p>
-        </div>
-
-        {newYear ? (
-          <HeroScene className="relative order-first mx-auto aspect-[1/0.66] w-full max-w-[560px] lg:order-none lg:aspect-[1/1.02] lg:max-w-none">
-            {/* Свечение за героями — как прожектор на сцене */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-[15%] top-[10%] bottom-[5%] rounded-full bg-rasp-400/30 blur-[80px]" />
-            {NY_HEROES.map((h, i) => (
-              // Внешний слой — место и появление с пружиной, внутренний — объём (параллакс).
-              <div key={h.src} className={`absolute ${h.cls}`} style={{ animation: `hero-in 1s var(--ease-spring) ${0.15 + i * 0.14}s both` }}>
-                <div style={depth(h.depth)}>
-                  <Photo
-                    src={h.src}
-                    alt={h.alt}
-                    width={h.w}
-                    height={h.h}
-                    preload
-                    tone="none"
-                    sizes="(max-width: 1024px) 50vw, 300px"
-                    className="h-auto w-full"
-                    style={FADE}
-                  />
-                </div>
-              </div>
-            ))}
-            <span className="absolute bottom-[4%] left-[0%] z-20 rotate-[-6deg] rounded-2xl bg-white px-2.5 py-1.5 text-[12px] font-bold text-rasp-700 shadow-xl lg:bottom-[10%] lg:px-3 lg:py-2 lg:text-[14px]">
-              Гринч уже в деле
+    <>
+      <section className="hero2">
+        <div className="wrap">
+          <h1 className="display">
+            <span>Поздравляем</span>
+            <span>
+              с <b className="ac">праздником!</b>
             </span>
-            {/* Цена — из каталога (Кирилл меняет её в админке). «от»: часовая программа дороже. */}
-            {ded && (
-              <span className="absolute right-[0%] bottom-[8%] z-20 rotate-[5deg] rounded-2xl bg-rasp-500 px-2.5 py-1.5 text-[12px] font-bold shadow-xl lg:right-[3%] lg:bottom-[18%] lg:px-3 lg:py-2 lg:text-[14px]">
-                Дед Мороз от {money(ded.price)}
-              </span>
-            )}
-          </HeroScene>
-        ) : (
-          <div className="grid grid-cols-3 gap-2">
-            {COLLAGE.map((id, i) => (
-              <div key={id} className={`relative aspect-[3/4] overflow-hidden rounded-2xl ${i % 2 ? "translate-y-6" : ""}`}>
-                <Photo src={costumeImg(id)} alt="" fill preload={i < 3} sizes="33vw" className="object-cover" />
-              </div>
-            ))}
+          </h1>
+          <p className="h2sub">Кстати, отпраздновать его с нами — отличная идея.</p>
+          <div className="hero-cta">
+            <Link className="pill pill--lime pulse" href="/sobrat" data-track="hero_build">
+              Рассчитать праздник
+            </Link>
+            <a className="pill pill--white" href={telegram} target="_blank" rel="noopener" data-track="hero_telegram">
+              Telegram
+            </a>
           </div>
-        )}
-      </div>
-
-      {/* Быстрый вход в воронку: выбор возраста */}
-      <div className="relative border-t border-white/10 bg-black/15">
-        <div className="wrap flex flex-col gap-3 py-5 md:flex-row md:items-center md:gap-6">
-          <p className="font-display text-[17px] font-semibold">Сколько лет ребёнку?</p>
-          <div className="rail md:!mx-0 md:!px-0">
-            {AGE_GROUPS.map((g) => (
-              <Link key={g.id} href={`/sobrat?age=${g.id}`} className="chip !min-h-12 !px-5 !text-[16px]" data-track={`hero_age_${g.id}`}>
-                {g.label}
-              </Link>
+        </div>
+      </section>
+      <section className="nyphs">
+        <div className="wrap">
+          {newYear && <span className="seas seas--ph">Новогодний сезон</span>}
+          <div className="h2ph">
+            {photos.map((ph, i) => (
+              <figure key={ph.src} className={`nyp nyp${i + 1}`}>
+                <Photo src={ph.src} alt={ph.alt} fill preload sizes="(max-width: 760px) 33vw, 250px" className="object-cover" />
+              </figure>
             ))}
           </div>
         </div>
-        <div className="overflow-hidden pt-2 pb-5">
-          <Marquee />
-        </div>
-        <Smile edge="bottom" className="fill-white" />
-      </div>
-    </section>
+      </section>
+      {newYear && (
+        <section className="nysec">
+          <div className="wrap">
+            <Link className="nybar" href={`/sobrat?kind=${encodeURIComponent("Новый год")}`} data-track="hero_season">
+              <b>Новый год</b>
+              <span>Даты на декабрь уже бронируют</span>
+              <i>Выбрать →</i>
+            </Link>
+          </div>
+        </section>
+      )}
+    </>
   );
 }

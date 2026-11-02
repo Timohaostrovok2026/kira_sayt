@@ -27,25 +27,27 @@ function Counter({ value, suffix }: { value: number; suffix: string }) {
   }, [value]);
   return (
     <span ref={ref} className="tabular-nums">
-      {n.toLocaleString("ru-RU")}
+      {n}
       {suffix}
     </span>
   );
 }
 
-/** Цифры доверия: докручиваются при появлении. */
+/** Цифры доверия: белые карточки, цифры шрифтом Nauryz, докручиваются при появлении. */
 export function Stats({ stats }: { stats: TrustStat[] }) {
   return (
-    <section className="border-b border-line bg-white">
-      <div className="wrap grid grid-cols-2 gap-x-4 gap-y-6 py-8 md:grid-cols-4 md:py-10">
-        {stats.map((s) => (
-          <div key={s.label}>
-            <p className="font-display text-[34px] font-bold leading-none tracking-tight text-rasp-600 md:text-[44px]">
-              <Counter value={s.value} suffix={s.suffix} />
-            </p>
-            <p className="mt-2 text-[15px] leading-snug text-ink-soft">{s.label}</p>
-          </div>
-        ))}
+    <section className="stats">
+      <div className="wrap">
+        <div className="stat-grid">
+          {stats.map((s) => (
+            <div key={s.label} className="stat">
+              <b>
+                <Counter value={s.value} suffix={s.suffix} />
+              </b>
+              <span>{s.label}</span>
+            </div>
+          ))}
+        </div>
       </div>
     </section>
   );

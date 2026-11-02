@@ -13,6 +13,9 @@
 /web/*.tsbuildinfo
 /web/next-env.d.ts
 
+# Фото с праздников (лица детей): на сайт едут deploy.sh с диска, в публичный git — нет (ROADMAP Т16)
+/web/public/img/live/
+
 # Локальные настройки Claude и его рабочие копии
 /.claude/settings.local.json
 /.claude/worktrees/

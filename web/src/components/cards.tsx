@@ -1,305 +1,263 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { Check, ChevronDown, Clock, Minus, Plus, Users } from "lucide-react";
-import { type Costume, type Extra, type Package, type Program, ageText, slotRef } from "@/data/catalog";
+import { useState, type ReactNode } from "react";
+import { KIND_CLASS, ageBig, ageText, lines, slotRef, splitHow, type Extra, type Package, type Program } from "@/data/catalog";
 import { useCart } from "@/lib/cart";
 import { useCatalog } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
-import { Photo } from "@/components/Photo";
-import { ChoiceSheet } from "@/components/ChoiceSheet";
-import { splitWords } from "@/components/SplitWords";
 
-export function SectionHead({
-  eyebrow,
-  title,
-  text,
-  action,
-  dark = false,
-  center = false,
-}: {
-  eyebrow?: string;
-  title: React.ReactNode;
-  text?: React.ReactNode;
-  action?: React.ReactNode;
-  dark?: boolean;
-  center?: boolean;
-}) {
+/**
+ * Акцентное слово заголовка (Nauryz): как в черновике Кирилла — последнее слово из 4–9 букв.
+ * Можно указать слово явно через accent.
+ */
+export function accentTitle(title: string, accent?: string): ReactNode {
+  const words = title.split(" ");
+  let pick = accent ? words.indexOf(accent) : -1;
+  if (pick < 0 && !accent && words.length > 1) {
+    words.forEach((w, i) => {
+      const n = w.replace(/[^А-Яа-яЁё]/g, "").length;
+      if (n >= 4 && n <= 9) pick = i;
+    });
+  }
+  if (pick < 0) return title;
   return (
-    <header
-      className={`reveal reveal-words mb-6 flex flex-col gap-3 md:mb-10 ${center ? "items-center text-center" : "md:flex-row md:items-end md:justify-between"}`}
-    >
-      <div className="max-w-2xl">
-        {eyebrow && <p className={`eyebrow mb-3 ${dark ? "text-rasp-300" : "text-rasp-600"}`}>{eyebrow}</p>}
-        {/* Заголовок проявляется по словам, когда блок попадает на экран */}
-        <h2 className="h-section">{splitWords(title)}</h2>
-        {text && <p className={`lead mt-3 ${dark ? "text-white/70" : "text-ink-soft"}`}>{text}</p>}
-      </div>
-      {action}
+    <>
+      {words.slice(0, pick).join(" ")}
+      {pick > 0 && " "}
+      <span className="ac">{words[pick]}</span>
+      {pick < words.length - 1 && " "}
+      {words.slice(pick + 1).join(" ")}
+    </>
+  );
+}
+
+/** Каждое предложение с новой строки — так короткие абзацы читаются в черновике Кирилла. */
+export function bySentence(text: string): ReactNode {
+  const parts = text.split(/(?<=[.!?…])\s+(?=[А-ЯЁA-Z«])/);
+  return parts.map((s, i) => (
+    <span key={i}>
+      {i > 0 && <br />}
+      {s}
+    </span>
+  ));
+}
+
+/** Заголовок раздела: капс, акцентное слово, подзаголовок. */
+export function SectionHead({ title, accent, lead, brace, as = "h2" }: { title: string; accent?: string; lead?: string; brace?: string; as?: "h1" | "h2" }) {
+  const H = as;
+  return (
+    <header className="sec-head">
+      {brace && <p className="brace">{brace}</p>}
+      <H className="display h-lg">{accentTitle(title, accent)}</H>
+      {lead && <p>{bySentence(lead)}</p>}
     </header>
   );
 }
 
-/** Кнопка «в корзину ↔ выбрано». */
-export function AddToggle({
-  on,
-  onClick,
-  label = "Выбрать",
-  onLabel = "Выбрано",
-  size = "btn-sm",
-  track,
-}: {
-  on: boolean;
-  onClick: () => void;
-  label?: string;
-  onLabel?: string;
-  size?: string;
-  track?: string;
-}) {
+export function Stars() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={on}
-      data-track={track}
-      className={`btn ${size} ${on ? "bg-ink text-white hover:bg-ink/90" : "btn-primary"}`}
-    >
-      {on ? <Check size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
-      {on ? onLabel : label}
-    </button>
+    <span className="stars" aria-hidden="true">
+      {[0, 1, 2, 3, 4].map((i) => (
+        <i key={i} className="st" />
+      ))}
+    </span>
   );
 }
 
-/** Карточка программы: фото героя на сцене, возраст, цена, выбор. */
-export function ProgramCard({ p, compact = false }: { p: Program; compact?: boolean }) {
+/** Программа: цветная обложка с крупным возрастом, описание, цена, «Подробнее» и «Выбрать». */
+export function ProgramCard({ p }: { p: Program }) {
   const { has, toggleProgram } = useCart();
-  const { programCover } = useCatalog();
   const on = has("program", p.id);
+  const href = `/programmy/${p.id}`;
   return (
-    <article data-tilt className={`card group relative flex flex-col overflow-hidden ${compact ? "w-[260px]" : ""}`}>
-      <Link href={`/programmy/${p.id}`} className="stage relative block aspect-[4/3] overflow-hidden" data-track={`program_open_${p.id}`}>
-        <Photo
-          src={programCover(p.id)}
-          alt=""
-          fill
-          sizes="(max-width: 768px) 80vw, 320px"
-          className="object-cover object-[50%_20%] transition-transform duration-500 group-hover:scale-105"
-        />
-        <span className="absolute left-3 top-3 rounded-full bg-black/35 px-3 py-1 text-[13px] font-semibold text-white backdrop-blur-md">
-          {p.kind}
-        </span>
-        <span className="absolute bottom-3 left-3 rounded-full bg-white px-3 py-1 text-[13px] font-bold text-rasp-700">
-          {ageText(p)}
+    <article className="pcard">
+      <Link href={href} className={`cover ${KIND_CLASS[p.kind] ?? "k-anim"}`} aria-label={`Открыть программу ${p.name}`} data-track={`program_open_${p.id}`}>
+        <span className="tag">{p.kind}</span>
+        <span className="ages">
+          {ageBig(p)}
+          <small>{p.a == null && p.b == null ? "возраст" : "лет"}</small>
         </span>
       </Link>
-      <div className="flex flex-1 flex-col gap-3 p-4">
-        <Link href={`/programmy/${p.id}`} className="h-card hover:text-rasp-600">
-          {p.name}
-        </Link>
-        <div className="flex flex-wrap gap-x-4 gap-y-1 text-[14px] text-ink-soft">
-          <span className="inline-flex items-center gap-1.5">
-            <Clock size={15} /> {p.dur.replace(/\s*\(.*\)/, "")}
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <Users size={15} /> {p.art}
-          </span>
+      <div className="pcard-body">
+        <h3>
+          <Link href={href}>{p.name}</Link>
+        </h3>
+        <p className="intro">{splitHow(p.how).intro}</p>
+        <div className="meta">
+          {p.dur && <span>{p.dur}</span>}
+          {p.art && <span>{p.art}</span>}
         </div>
-        <div className="mt-auto flex items-center justify-between gap-3 pt-1">
-          <span className="price text-[20px]">
-            {/^от\s/i.test(p.dur) ? "от " : ""}
-            {money(p.price)}
-          </span>
-          <AddToggle on={on} onClick={() => toggleProgram(p.id)} track={`program_add_${p.id}`} />
+        <div className="card-foot">
+          <div className="cost num">{money(p.price)}</div>
+          <div className="btn-row">
+            <Link className="pill pill--ghost pill--sm" href={href}>
+              Подробнее
+            </Link>
+            <button className="pill pill--hot pill--sm" type="button" aria-pressed={on} onClick={() => toggleProgram(p.id)} data-track={`program_add_${p.id}`}>
+              {on ? "В заявке" : "Выбрать"}
+            </button>
+          </div>
         </div>
       </div>
     </article>
   );
 }
 
-/** Карточка героя: фото на малиновом фоне сливается со сценой. */
-export function CostumeCard({ c, size = "md" }: { c: Costume; size?: "sm" | "md" }) {
-  const { has, toggleCostume } = useCart();
-  const { costumeImg } = useCatalog();
-  const on = has("costume", c.id);
-  return (
-    <article
-      data-tilt
-      className={`group relative overflow-hidden rounded-[22px] bg-rasp-900 text-white ${size === "sm" ? "w-[160px] sm:w-[190px]" : ""}`}
-    >
-      <div className="relative aspect-[3/4]">
-        <Photo
-          src={costumeImg(c.id)}
-          alt={c.name}
-          fill
-          sizes={size === "sm" ? "190px" : "(max-width: 640px) 50vw, 240px"}
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-        />
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-rasp-950/95 via-rasp-950/60 to-transparent p-3 pt-12">
-          <h3 className="text-[15px] font-bold leading-tight">{c.name}</h3>
-          <p className="mt-0.5 text-[12px] text-white/60">{c.cat}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => toggleCostume(c.id)}
-          aria-pressed={on}
-          aria-label={on ? `Убрать героя ${c.name}` : `Выбрать героя ${c.name}`}
-          data-track={`costume_add_${c.id}`}
-          className={`absolute right-2.5 top-2.5 grid h-10 w-10 place-items-center rounded-full shadow-lg transition-all duration-300 active:scale-90 ${on ? "bg-white text-rasp-600" : "bg-rasp-500 text-white"}`}
-        >
-          {on ? <Check size={20} strokeWidth={3} /> : <Plus size={20} strokeWidth={3} />}
-        </button>
-      </div>
-    </article>
-  );
-}
-
-/** Шоу, мастер-класс или доп: строка с ценой и счётчиком. */
+/** Шоу, мастер-класс или доп: каждое нажатие «Добавить» — ещё одна штука, как в черновике. */
 export function ExtraCard({ e }: { e: Extra }) {
   const { state, setExtra } = useCart();
   const qty = state.extras[e.id] ?? 0;
-  const perUnit = /шт|ребёнка|слайм|тыкву|позицию|сот|детей/.test(e.unit ?? "");
+  const { intro, steps } = splitHow(e.how);
+  const inc = lines(e.inc || steps.join("\n"));
+  const age = e.a != null || e.b != null ? ageText(e) : "";
   return (
-    <article data-tilt className="card group relative flex flex-col gap-3 overflow-hidden p-4">
-      {e.photo && (
-        <div className="relative -mx-4 -mt-4 aspect-[16/10] overflow-hidden bg-rasp-100">
-          <Photo
-            tone="light"
-            src={e.photo}
-            alt={e.name}
-            fill
-            sizes="(max-width: 768px) 85vw, 340px"
-            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          />
+    <article className="xcard">
+      <h4>{e.name}</h4>
+      {intro && <p className="intro">{intro}</p>}
+      {(e.dur || age) && (
+        <div className="meta">
+          {e.dur && <span>{e.dur}</span>}
+          {age && <span>{age}</span>}
         </div>
       )}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <h3 className="h-card text-[17px]">{e.name}</h3>
-          <p className="mt-1 text-[14px] text-ink-soft">
-            {[e.dur, ageText(e) !== "любой возраст" ? ageText(e) : null].filter(Boolean).join(" · ")}
-          </p>
+      {inc.length > 0 && (
+        <details>
+          <summary>Что входит</summary>
+          <ul className="checks">
+            {inc.map((t, i) => (
+              <li key={i}>
+                <span>{t}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+      <div className="card-foot">
+        <div className="cost num">
+          {money(e.price)}
+          {e.unit && <small>{e.unit}</small>}
         </div>
-      </div>
-      {e.how && <p className="line-clamp-3 text-[15px] leading-snug text-ink/80">{e.how.split("\n\n")[0]}</p>}
-      <div className="mt-auto flex items-center justify-between gap-3">
-        <span>
-          <span className="price text-[18px]">{money(e.price)}</span>
-          {e.unit && <span className="ml-1.5 text-[13px] text-ink-soft">{e.unit}</span>}
-        </span>
-        {perUnit && qty > 0 ? (
-          <div className="flex items-center gap-1 rounded-full bg-rasp-100 p-1">
-            <button type="button" className="grid h-9 w-9 place-items-center rounded-full bg-white text-rasp-700" onClick={() => setExtra(e.id, qty - 1)} aria-label="Меньше">
-              <Minus size={16} strokeWidth={3} />
-            </button>
-            <span className="min-w-8 text-center font-bold tabular-nums">{qty}</span>
-            <button type="button" className="grid h-9 w-9 place-items-center rounded-full bg-rasp-500 text-white" onClick={() => setExtra(e.id, qty + 1)} aria-label="Больше">
-              <Plus size={16} strokeWidth={3} />
-            </button>
-          </div>
-        ) : (
-          <AddToggle on={qty > 0} onClick={() => setExtra(e.id, qty > 0 ? 0 : 1)} label="Добавить" onLabel="Добавлено" track={`extra_add_${e.id}`} />
-        )}
+        <button className="pill pill--hot pill--sm" type="button" onClick={() => setExtra(e.id, qty + 1)} data-track={`extra_add_${e.id}`}>
+          {qty ? `В заявке: ${qty}` : "Добавить"}
+        </button>
       </div>
     </article>
   );
 }
 
-/** Пакет: состав, выгода, выбор вариантов в слотах. */
-export function PackageCard({
-  k,
-  choices = {},
-  onChoose,
-  featured = false,
-}: {
-  k: Package;
-  choices?: Record<number, string>;
-  onChoose?: (slot: number, ref: string) => void;
-  featured?: boolean;
-}) {
-  const { has, addPackage, removePackage } = useCart();
+/** Подпись слота пакета: квест, съёмка или шоу. */
+function slotLabel(opts: string[], find: (id: string) => { kind: string; name: string } | undefined) {
+  if (opts.every((r) => find(r)?.kind === "Квест")) return "Выберите квест";
+  if (opts.some((r) => /Фотограф/.test(find(r)?.name ?? ""))) return "Фотограф или Reels: выберите одно";
+  return "Выберите одно";
+}
+
+/**
+ * Пакет: состав, варианты в слотах кнопками, цена со скидкой.
+ * Пакет с выбором по умолчанию свёрнут — «Развернуть состав».
+ */
+export function PackageCard({ k }: { k: Package }) {
+  const { state, addPackage, removePackage, setPackageChoices } = useCart();
   const { anyItem, packagePrice } = useCatalog();
-  const on = has("package", k.id);
+  const inCart = state.packages.find((x) => x.id === k.id);
+  const [own, setOwn] = useState<Record<number, string>>({});
+  const choices = inCart?.choices ?? own;
+  const [open, setOpen] = useState(false);
+
+  if (k.custom) {
+    return (
+      <article className="pack">
+        <h3>{k.name}</h3>
+        {/* Тексты — из админки (tag и note), как у остальных пакетов. */}
+        <p className="tagl">{k.tag}</p>
+        {k.note && <p className="pnote">{k.note}</p>}
+        <div className="pfoot">
+          <div className="pprice">
+            <b>Цена после обсуждения</b>
+          </div>
+          <button className="pill pill--lime" type="button" aria-pressed={!!inCart} onClick={() => (inCart ? removePackage(k.id) : addPackage(k.id))} data-track={`package_add_${k.id}`}>
+            {inCart ? "В заявке ✓" : "Обсудить"}
+          </button>
+        </div>
+      </article>
+    );
+  }
+
+  const pick = (i: number, ref: string) => {
+    const next = { ...choices, [i]: ref };
+    if (inCart) setPackageChoices(k.id, next);
+    else setOwn(next);
+  };
   const pr = packagePrice(k, choices);
-  // Какой слот сейчас выбирают в шторке (null — шторка закрыта).
-  const [picking, setPicking] = useState<number | null>(null);
-  const pickItem = picking != null ? k.items[picking] : null;
+  const hasSlot = k.items.some((it) => it.alts && it.alts.length > 0);
+  const dur = /длительность/i.test(k.note) ? `Длительность: ${k.note.replace(/\s*длительность\s*/i, "").trim()}` : k.note;
   return (
-    <article
-      className={`relative flex w-full min-w-0 flex-col gap-4 rounded-[28px] p-5 md:p-6 ${featured ? "bg-white text-ink shadow-[0_30px_80px_-30px_rgb(0_0_0/0.6),0_0_0_1px_rgb(255_255_255/0.6)]" : "glass text-white"}`}
-    >
-      <div className="flex items-center justify-between gap-3">
-        <span className={`rounded-full px-3 py-1 text-[13px] font-bold ${featured ? "bg-rasp-500 text-white" : "bg-white/15 text-white"}`}>
-          {k.custom ? "Под ваш сценарий" : k.disc ? `Скидка ${k.disc}%` : "Пакет"}
-        </span>
-        {featured && <span className="eyebrow text-rasp-600">Хит</span>}
-      </div>
-      <div>
-        <h3 className="font-display text-[28px] font-bold leading-none tracking-tight">{k.name}</h3>
-        <p className={`mt-2 text-[15px] leading-snug ${featured ? "text-ink-soft" : "text-white/70"}`}>{k.tag}</p>
-      </div>
-      {!k.custom && (
-        <ul className="flex flex-col gap-2">
+    <article className={`pack${hasSlot ? " pack--c" : ""}${open ? " open" : ""}`}>
+      <span className="badge">{k.disc ? `Скидка ${k.disc}%` : "Пакет"}</span>
+      <h3>{k.name}</h3>
+      <p className="tagl">{k.tag}</p>
+      {hasSlot && (
+        <button className="pkx" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
+          <span>{open ? "Свернуть состав" : "Развернуть состав"}</span>
+          <i aria-hidden="true">{open ? "▴" : "▾"}</i>
+        </button>
+      )}
+      <div className="pbody">
+        <div className="pitems">
           {k.items.map((it, i) => {
-            const ref = slotRef(it, choices[i]);
-            const opts = it.alts ? [it.ref, ...it.alts] : null;
+            if (it.alts && it.alts.length) {
+              const opts = [it.ref, ...it.alts];
+              const cur = slotRef(it, choices[i]);
+              return (
+                <div className="slot" key={i}>
+                  <span className="lbl">{slotLabel(opts, anyItem)}</span>
+                  <div className="opts">
+                    {opts.map((r) => {
+                      const e = anyItem(r);
+                      if (!e) return null;
+                      return (
+                        <button key={r} className="opt" type="button" aria-pressed={cur === r} onClick={() => pick(i, r)} data-track={`package_slot_${k.id}`}>
+                          <span>{e.name}</span>
+                          <span>{money(e.price * (it.qty || 1))}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+            const e = anyItem(it.ref);
+            if (!e) return null;
             return (
-              <li key={i} className="flex min-w-0 items-center justify-between gap-2">
-                <span className="flex min-w-0 items-start gap-2 text-[15px] font-medium">
-                  <Check size={18} strokeWidth={3} className={`mt-0.5 shrink-0 ${featured ? "text-rasp-500" : "text-rasp-300"}`} />
-                  {anyItem(ref)?.name}
+              <div className="pitem" key={i}>
+                <span>
+                  {e.name}
+                  {it.qty > 1 ? ` × ${it.qty}` : ""}
                 </span>
-                {/* Вариант меняется в шторке — без ряда чипсов карточка короче и спокойнее */}
-                {opts && onChoose && (
-                  <button
-                    type="button"
-                    onClick={() => setPicking(i)}
-                    data-track={`package_slot_${k.id}`}
-                    aria-label={`Сменить: ${anyItem(ref)?.name ?? ""}`}
-                    className={`inline-flex min-h-10 shrink-0 items-center gap-0.5 rounded-full pr-2.5 pl-3 text-[13px] font-semibold transition-colors ${
-                      featured ? "bg-rasp-50 text-rasp-700 hover:bg-rasp-100" : "bg-white/10 text-white hover:bg-white/20"
-                    }`}
-                  >
-                    Сменить <ChevronDown size={16} />
-                  </button>
-                )}
-              </li>
+                <span>{money(e.price * (it.qty || 1))}</span>
+              </div>
             );
           })}
-        </ul>
-      )}
-      {(k.note || k.custom) && <p className={`text-[14px] ${featured ? "text-ink-soft" : "text-white/60"}`}>{k.note}</p>}
-      <div className="mt-auto flex items-end justify-between gap-3 pt-2">
-        <div>
-          {k.custom ? (
-            <span className="price text-[24px]">По запросу</span>
-          ) : (
-            <>
-              {pr.save > 0 && <s className={`block text-[14px] tabular-nums ${featured ? "text-ink-soft" : "text-white/50"}`}>{money(pr.full)}</s>}
-              <span className="price text-[28px] leading-none">{money(pr.price)}</span>
-            </>
-          )}
         </div>
+        {dur && <p className="pnote">{dur}</p>}
+      </div>
+      <div className="pfoot">
+        <div className="pprice">
+          <b className="num">{money(pr.price)}</b>
+          {pr.save > 0 && <s className="num">{money(pr.full)}</s>}
+        </div>
+        {pr.save > 0 && <p className="pnote">Выгода: {money(pr.save)}</p>}
         <button
+          className="pill pill--lime"
           type="button"
-          aria-pressed={on}
+          aria-pressed={!!inCart}
+          onClick={() => (inCart ? removePackage(k.id) : addPackage(k.id, choices))}
           data-track={`package_add_${k.id}`}
-          onClick={() => (on ? removePackage(k.id) : addPackage(k.id, choices))}
-          className={`btn ${on ? (featured ? "bg-ink text-white" : "bg-white text-rasp-700") : featured ? "btn-primary" : "btn-light"}`}
         >
-          {on ? <Check size={18} strokeWidth={3} /> : <Plus size={18} strokeWidth={3} />}
-          {on ? "В корзине" : "Выбрать"}
+          {inCart ? "В заявке ✓" : hasSlot ? "Добавить с выбором" : "Добавить пакет"}
         </button>
       </div>
-      {pickItem && picking != null && onChoose && (
-        <ChoiceSheet
-          title="Выберите вариант"
-          value={slotRef(pickItem, choices[picking])}
-          options={[pickItem.ref, ...(pickItem.alts ?? [])].map((id) => ({ id, name: anyItem(id)?.name ?? id, price: anyItem(id)?.price }))}
-          onPick={(ref) => onChoose(picking, ref)}
-          onClose={() => setPicking(null)}
-        />
-      )}
     </article>
   );
 }

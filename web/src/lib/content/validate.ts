@@ -277,11 +277,16 @@ export function cleanSite(v: unknown): SiteContent {
       return { src, alt: str(x.alt, 120), ...(tag ? { tag } : {}) };
     }, 200),
     reviews: list(r.reviews, (x) =>
-      text(x.text) ? { name: str(x.name, 60) || "Гость", date: str(x.date, 40), text: text(x.text, 2000), source: str(x.source, 60) } : null,
+      text(x.text)
+        ? { name: str(x.name, 60) || "Гость", date: str(x.date, 40), text: text(x.text, 2000), source: str(x.source, 60), ...(str(x.topic) ? { topic: str(x.topic, 80) } : {}) }
+        : null,
     ),
     yandexRating: str(r.yandexRating, 6),
     yandexReviewsCount: optNumber(r.yandexReviewsCount, 0, 100000, "Число отзывов") ?? 0,
     yandexUrl: url(r.yandexUrl, "Ссылка на отзывы"),
+    profiRating: str(r.profiRating, 6),
+    profiReviewsCount: optNumber(r.profiReviewsCount, 0, 100000, "Число отзывов на Профи.ру") ?? 0,
+    profiUrl: url(r.profiUrl, "Ссылка на Профи.ру"),
     legal: str(r.legal, 200),
   };
 }

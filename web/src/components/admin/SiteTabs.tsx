@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useId, useState } from "react";
 import { ArrowDown, ArrowUp, Check, ImagePlus, Loader2, Trash2 } from "lucide-react";
 import { saveSite } from "@/app/admin/actions";
-import type { SiteContent } from "@/data/site";
+import type { Review, SiteContent } from "@/data/site";
 import type { SiteInput } from "@/lib/content/validate";
 import { Field, IconBtn, Input, NumberInput, Repeater, Section, Textarea, useAdmin } from "./ui";
 import { uploadPhoto } from "./upload";
@@ -238,9 +238,20 @@ export function GalleryTab() {
         </ul>
       </Section>
 
-      <Section title="Отзывы" hint="Только настоящие отзывы — с Яндекс Карт или из переписки.">
+      <Section title="Отзывы" hint="Только настоящие отзывы — с Профи.ру, Яндекс Карт или из переписки. На сайте две вкладки: по полю «Откуда».">
         <div className="grid gap-4 sm:grid-cols-[100px_140px_1fr]">
-          <Field label="Рейтинг">
+          <Field label="Профи.ру: рейтинг">
+            <Input value={d.profiRating} onChange={(e) => set({ profiRating: e.target.value })} placeholder="5,0" inputMode="decimal" />
+          </Field>
+          <Field label="Отзывов">
+            <NumberInput value={d.profiReviewsCount} onChange={(v) => set({ profiReviewsCount: v ?? 0 })} />
+          </Field>
+          <Field label="Ссылка на профиль">
+            <Input value={d.profiUrl} onChange={(e) => set({ profiUrl: e.target.value })} inputMode="url" autoCapitalize="off" />
+          </Field>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-[100px_140px_1fr]">
+          <Field label="Яндекс: рейтинг">
             <Input value={d.yandexRating} onChange={(e) => set({ yandexRating: e.target.value })} placeholder="5.0" inputMode="decimal" />
           </Field>
           <Field label="Отзывов">
@@ -253,7 +264,7 @@ export function GalleryTab() {
         <Repeater
           items={d.reviews}
           onChange={(reviews) => set({ reviews })}
-          blank={() => ({ name: "", date: "", text: "", source: "Яндекс Карты" })}
+          blank={(): Review => ({ name: "", date: "", text: "", source: "Профи.ру" })}
           addLabel="Добавить отзыв"
           render={(r, setR) => (
             <>
@@ -265,9 +276,14 @@ export function GalleryTab() {
                   <Input value={r.date} onChange={(e) => setR({ date: e.target.value })} placeholder="7 апреля" />
                 </Field>
               </div>
-              <Field label="Откуда">
-                <Input value={r.source} onChange={(e) => setR({ source: e.target.value })} />
-              </Field>
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Откуда">
+                  <Input value={r.source} onChange={(e) => setR({ source: e.target.value })} placeholder="Профи.ру или Яндекс Карты" />
+                </Field>
+                <Field label="Что заказывали">
+                  <Input value={r.topic ?? ""} onChange={(e) => setR({ topic: e.target.value })} placeholder="Аниматоры" />
+                </Field>
+              </div>
               <Field label="Текст отзыва">
                 <Textarea value={r.text} onChange={(v) => setR({ text: v })} rows={4} />
               </Field>

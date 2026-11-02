@@ -24,6 +24,12 @@
       "runtimeExecutable": "python3",
       "runtimeArgs": ["-I", "-m", "http.server", "3400", "--bind", "127.0.0.1", "--directory", "scratch/kirill-artifact-2026-10-31"],
       "port": 3400
+    },
+    {
+      "name": "kirill-v11",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-I", "-m", "http.server", "3401", "--bind", "127.0.0.1", "--directory", "scratch/kirill-v11/site"],
+      "port": 3401
     }
   ]
 }

@@ -27,9 +27,9 @@
   --color-lime: #c8f560;
   --color-lime-300: #dcfa8e;
 
-  --font-display: var(--font-unbounded), system-ui, sans-serif;
-  --font-sans: var(--font-onest), system-ui, sans-serif;
-  --font-accent: var(--font-nauryz), var(--font-unbounded), system-ui, sans-serif;
+  --font-display: var(--font-raleway), system-ui, sans-serif;
+  --font-sans: var(--font-raleway), system-ui, sans-serif;
+  --font-accent: var(--font-nauryz), var(--font-raleway), system-ui, sans-serif;
 
   --radius-card: 24px;
   --radius-pill: 999px;

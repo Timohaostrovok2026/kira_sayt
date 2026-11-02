@@ -268,3 +268,22 @@ export function useCart() {
   if (!c) throw new Error("useCart outside CartProvider");
   return c;
 }
+
+/** Группы строк заявки — одинаково в корзине и на шаге «Готово» конструктора. */
+export const LINE_GROUPS: { type: CartLine["type"]; title: string }[] = [
+  { type: "program", title: "Программы" },
+  { type: "package", title: "Пакеты" },
+  { type: "extra", title: "Шоу и допы" },
+  { type: "costume", title: "Герои" },
+];
+
+/** «Убрать» строку заявки любого типа (МКАД и звук выключаются в корзине переключателями). */
+export function useRemoveLine() {
+  const { toggleProgram, setExtra, removePackage, toggleCostume } = useCart();
+  return (l: CartLine) => {
+    if (l.type === "program") toggleProgram(l.id);
+    else if (l.type === "extra") setExtra(l.id, 0);
+    else if (l.type === "package") removePackage(l.id);
+    else if (l.type === "costume") toggleCostume(l.id);
+  };
+}

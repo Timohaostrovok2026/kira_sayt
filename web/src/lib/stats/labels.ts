@@ -1,6 +1,7 @@
 import "server-only";
 import { AGE_GROUPS, KINDS, type Costume, type Extra, type Package, type Program } from "@/data/catalog";
 import { readContentShared, type ContentAll } from "@/lib/content/store";
+import { STEPS } from "@/components/sobrat/model";
 
 /**
  * Названия позиций берём из базы — включая скрытые, чтобы в статистике были имена, а не id.
@@ -118,6 +119,23 @@ const CLICK_EXACT: Record<string, string> = {
   pwa_install: "Плашка «На экран»: «Установить»",
   pwa_dismiss: "Плашка «На экран»: закрыли",
   pwa_ios_done: "Плашка «На экран»: «Понятно» (iPhone)",
+  // Вид черновика Кирилла v11 (02.11)
+  hero_telegram: "Главная, первый экран: «Telegram»",
+  home_all_programs: "Главная: «Все программы»",
+  home_all_shows: "Главная: «Все шоу»",
+  home_all_packages: "Главная: «Посмотреть все пакеты»",
+  home_looks_heroes: "Главная, «Как выглядит праздник?»: «Получить подборку героев»",
+  home_looks_photos: "Главная, «Как выглядит праздник?»: «Смотреть фото с праздников»",
+  home_live_channel: "Главная, «Живые праздники»: «Больше в Telegram-канале»",
+  home_live_instagram: "Главная, «Живые праздники»: Instagram",
+  home_faq_telegram: "Главная, вопросы: «Спросить в Telegram»",
+  reviews_profi: "Отзывы: рейтинг Профи.ру",
+  reviews_profi_all: "Отзывы: все отзывы на Профи.ру",
+  reviews_yandex: "Отзывы: рейтинг Яндекс Карт",
+  reviews_yandex_all: "Отзывы: «Все отзывы на Яндекс Картах»",
+  footer_copy_phone: "Подвал: «Скопировать номер»",
+  bar_cart: "Полоса «Заявка · N · сумма» внизу",
+  bottom_contact: "Нижнее меню: «Связаться» (Telegram)",
 };
 
 /** Названия отдельных событий (не кликов), которые пишутся через track(). */
@@ -142,9 +160,12 @@ const CLICK_PREFIX: [string, (rest: string) => string][] = [
   ["package_add_", (r) => `Выбрали пакет: ${packageById[r]?.name ?? r}`],
   ["package_slot_", (r) => `Пакет: меняют вариант в «${packageById[r]?.name ?? r}»`],
   ["cart_remove_", (r) => `Корзина: убрали «${anyName(r)}»`],
+  ["program_page_add_", (r) => `Программа: выбрали «${programById[r]?.name ?? r}»`],
+  ["program_page_extra_", (r) => `Программа: добавили доп «${extraById[r]?.name ?? r}»`],
+  ["builder_age_", (r) => `Конструктор: возраст ${ageName(r)}`],
   ["cart_empty_", (r) => `Пустая корзина: ${pageLabel(`/${r}`)}`],
   ["hero_age_", (r) => `Главная: возраст ${ageName(r)}`],
-  ["home_kind_", (r) => `Главная: раздел «${KINDS.find((k) => k.slug === r)?.title ?? r}»`],
+  ["home_kind_", (r) => `Главная: раздел «${KINDS.find((k) => k.slug === r || k.id === r)?.title ?? r}»`],
   ["builder_next_", (r) => `Конструктор: «Дальше» с шага ${r}`],
   ["pakety_step_", (r) => `Пакеты: шаг ${r}`],
   ["faq_", (r) => `Вопрос: «${r}…»`],
@@ -178,7 +199,8 @@ export function addLabel(type: string, id: string) {
   return `Выбрали ${what}: ${itemName(type, id)}`;
 }
 
-const STEP_NAMES: Record<string, string> = { "1": "Возраст", "2": "Программа", "3": "Шоу", "4": "Допы", "5": "Готово" };
+// Шаги — из конструктора. До 02.11 их было 5 (4 — «Допы», 5 — «Готово»): старые записи подписаны по-новому.
+const STEP_NAMES: Record<string, string> = Object.fromEntries(STEPS.map((s) => [String(s.n), s.tab]));
 
 export function stepLabel(step: string) {
   return STEP_NAMES[step] ? `${step}. ${STEP_NAMES[step]}` : `Шаг ${step}`;

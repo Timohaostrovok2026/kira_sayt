@@ -1,4 +1,5 @@
 import Script from "next/script";
+import { Suspense } from "react";
 import { CartProvider } from "@/lib/cart";
 import { CatalogProvider } from "@/lib/catalog-context";
 import { getCatalogData, getSiteContent } from "@/lib/content/get";
@@ -9,6 +10,10 @@ import { AddedToast } from "@/components/AddedToast";
 import { Tracker } from "@/components/Tracker";
 import { InstallPrompt } from "@/components/InstallPrompt";
 import { Motion } from "@/components/Motion";
+import { CartBar } from "@/components/CartBar";
+import "./site.css";
+import "./site-home.css";
+import "./site-pages.css";
 
 const YM_ID = process.env.NEXT_PUBLIC_YM_ID;
 
@@ -19,12 +24,19 @@ export default async function SiteLayout({ children }: LayoutProps<"/">) {
   return (
     <CatalogProvider data={data} site={site}>
       <CartProvider>
-        <Header />
-        <main className="flex-1">{children}</main>
-        <Footer contacts={site.contacts} legal={site.legal} />
-        <BottomNav />
-        <AddedToast />
-        <InstallPrompt />
+        <div className="site flex flex-1 flex-col">
+          <Header />
+          <main className="flex-1">{children}</main>
+          <Footer contacts={site.contacts} legal={site.legal} />
+          <Suspense fallback={null}>
+            <CartBar />
+          </Suspense>
+          <BottomNav />
+        </div>
+        <div className="site">
+          <AddedToast />
+          <InstallPrompt />
+        </div>
         <Motion />
         <Tracker />
         {YM_ID && (

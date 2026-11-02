@@ -1,21 +1,17 @@
 import type { Metadata, Viewport } from "next";
 import Script from "next/script";
-import { Onest, Unbounded } from "next/font/google";
+import { Raleway } from "next/font/google";
 import localFont from "next/font/local";
+import { SITE_URL } from "@/lib/site-url";
 import "./globals.css";
 
-const unbounded = Unbounded({
-  variable: "--font-unbounded",
-  subsets: ["latin", "cyrillic"],
-  weight: ["500", "600", "700", "800"],
-});
-
-const onest = Onest({
-  variable: "--font-onest",
+// Raleway — заголовки (900, капсом) и текст сайта по черновику Кирилла v11 (DESIGN.md §3).
+const raleway = Raleway({
+  variable: "--font-raleway",
   subsets: ["latin", "cyrillic"],
 });
 
-// Акцентное слово в заголовках (вариант Б, DESIGN.md §3). Шрифт Red Keds — авторы заявляют бесплатное использование; «₽» в нём нет.
+// Акцентное слово в заголовках, логотип, цифры и цены (DESIGN.md §3). Шрифт Red Keds — авторы заявляют бесплатное использование; «₽» в нём нет.
 const nauryz = localFont({
   variable: "--font-nauryz",
   src: "./fonts/nauryz.woff",
@@ -23,13 +19,13 @@ const nauryz = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"),
+  metadataBase: new URL(SITE_URL),
   title: {
     default: "Улыбайся — детские праздники в Москве: аниматоры, шоу, квесты",
     template: "%s · Улыбайся",
   },
   description:
-    "Соберите детский праздник за пару минут: 110+ героев, квесты, крио- и бумажное шоу, мастер-классы. Цены на сайте, заявка в один клик. Москва и область.",
+    "Соберите детский праздник за пару минут: 100+ героев, квесты, крио- и бумажное шоу, мастер-классы. Цены на сайте, заявка в один клик. Москва и область.",
   applicationName: "Улыбайся",
   // На iPhone с экрана «Домой» открывается без адресной строки, как приложение.
   appleWebApp: { capable: true, title: "Улыбайся", statusBarStyle: "black" },
@@ -43,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#220006",
+  themeColor: "#3a0522",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
@@ -51,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="ru" className={`${unbounded.variable} ${onest.variable} ${nauryz.variable}`}>
+    <html lang="ru" className={`${raleway.variable} ${nauryz.variable}`}>
       <body className="flex min-h-dvh flex-col">
         {children}
         {/* Android присылает «можно установить» рано, иногда до загрузки React: запоминаем событие для InstallPrompt */}

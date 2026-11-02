@@ -1,71 +1,114 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowRight, LoaderCircle, Send, Undo2 } from "lucide-react";
-import { useCart } from "@/lib/cart";
+import { useEffect, useRef, useState } from "react";
+import { LINE_GROUPS, useCart, useRemoveLine, type CartLine } from "@/lib/cart";
 import { money, plural } from "@/lib/format";
 import { flushNow, track, visitorId } from "@/lib/track";
-import { CartLines, type Removed } from "./CartLines";
+import { useCatalog, useSite } from "@/lib/catalog-context";
 import { CartOptions } from "./CartOptions";
 import { EmptyCart } from "./EmptyCart";
 import { LeadForm } from "./LeadForm";
 import { LeadResult, type LeadResultData } from "./LeadResult";
-import { buildLeadText, phoneValid, telegramLink, whatsappLink } from "./lead";
-import { useCatalog, useSite } from "@/lib/catalog-context";
+import { buildLeadText, isPerUnit, phoneValid, telegramLink, whatsappLink } from "./lead";
 
+/** Позиции заявки по группам: количество для допов, «Убрать» у всех. */
+function Lines({ remove }: { remove: (l: CartLine) => void }) {
+  const { lines, setExtra } = useCart();
+  const { extraById } = useCatalog();
+  return (
+    <div>
+      {LINE_GROUPS.map((g) => {
+        const ls = lines.filter((l) => l.type === g.type);
+        if (!ls.length) return null;
+        return (
+          <div key={g.type}>
+            <h3 className="cg">
+              {g.title} <small>{ls.length}</small>
+            </h3>
+            {ls.map((l) => (
+              <div className="li" key={l.key}>
+                <div className="t">
+                  {l.title}
+                  {l.subtitle && <small>{l.subtitle}</small>}
+                </div>
+                <div className="p num">{l.price ? money(l.price) : ""}</div>
+                <div className="ctl">
+                  {l.type === "extra" && (isPerUnit(extraById[l.id]?.unit) || l.qty > 1) && (
+                    <>
+                      <button className="qbtn" type="button" aria-label="Меньше" onClick={() => setExtra(l.id, l.qty - 1)}>
+                        −
+                      </button>
+                      <b className="num">{l.qty}</b>
+                      <button className="qbtn" type="button" aria-label="Больше" onClick={() => setExtra(l.id, l.qty + 1)}>
+                        +
+                      </button>
+                    </>
+                  )}
+                  <button className="rm" type="button" onClick={() => remove(l)} data-track={`cart_remove_${l.id}`}>
+                    Убрать
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+/**
+ * «Ваша заявка»: устройство прежнее (позиции и форма слева, липкий итог справа), вид — черновика Кирилла v11.
+ * Главное — «Отправить заявку» (база и Telegram-бот менеджеров); ниже мелко — написать напрямую в WhatsApp или Telegram (решение владельца 02.11).
+ */
 export function CartView() {
   const cart = useCart();
   const cat = useCatalog();
   const { contacts } = useSite();
   const { state, lines, total, count, ready, clear } = cart;
+  const removeLine = useRemoveLine();
 
   const [result, setResult] = useState<LeadResultData | null>(null);
   const [sending, setSending] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  const [undo, setUndo] = useState<{ label: string; restore: Parameters<Removed>[1]; at: number } | null>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
+  const sendRef = useRef<HTMLButtonElement>(null);
   const [barVisible, setBarVisible] = useState(false);
   const [typing, setTyping] = useState(false);
-
-  const formRef = useRef<HTMLFormElement>(null);
-  const phoneRef = useRef<HTMLInputElement>(null);
-  const summaryRef = useRef<HTMLDivElement>(null);
-
-  // Отмена удаления: 5 секунд на «Вернуть».
+  // «Убрали: … · Вернуть» — 5 секунд (решение владельца 03.11: на телефоне легко промахнуться по «Убрать»).
+  const [undo, setUndo] = useState<{ l: CartLine; choices?: Record<number, string>; at: number } | null>(null);
   useEffect(() => {
     if (!undo) return;
     const t = setTimeout(() => setUndo(null), 5000);
     return () => clearTimeout(t);
   }, [undo]);
-
-  const onRemoved = useCallback<Removed>((label, restore) => setUndo({ label, restore, at: Date.now() }), []);
-
-  // Липкая панель на телефоне видна, пока итоговая карточка ниже экрана.
-  const hasItems = ready && count > 0 && !result;
-  useEffect(() => {
-    const el = summaryRef.current;
-    if (!hasItems || !el || !("IntersectionObserver" in window)) return;
-    const io = new IntersectionObserver(([e]) => setBarVisible(!e.isIntersecting && e.boundingClientRect.top > 0));
-    io.observe(el);
-    return () => io.disconnect();
-  }, [hasItems]);
+  const remove = (l: CartLine) => {
+    // Выбор вариантов пакета запоминаем, чтобы вернуть пакет таким же.
+    const choices = l.type === "package" ? state.packages.find((p) => p.id === l.id)?.choices : undefined;
+    removeLine(l);
+    setUndo({ l, choices, at: Date.now() });
+  };
+  const restore = () => {
+    if (!undo) return;
+    const { l, choices } = undo;
+    if (l.type === "program") cart.toggleProgram(l.id);
+    else if (l.type === "extra") cart.setExtra(l.id, l.qty);
+    else if (l.type === "package") cart.addPackage(l.id, choices);
+    else if (l.type === "costume") cart.toggleCostume(l.id);
+    setUndo(null);
+  };
 
   const custom = lines.some((l) => l.type === "package" && l.price === 0);
   const okPhone = phoneValid(state.form.phone);
-  // Текст заявки: уходит с формой и в ссылки «в мессенджер» под ней.
   const msgText = buildLeadText(state, lines, total, cat);
-
-  const focusPhone = () => {
-    const el = phoneRef.current;
-    if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "center" });
-    el.focus({ preventScroll: true });
-  };
 
   async function submit() {
     if (sending) return;
     if (!okPhone) {
       setShowErrors(true);
-      focusPhone();
+      const el = phoneRef.current;
+      el?.scrollIntoView({ behavior: "smooth", block: "center" });
+      el?.focus({ preventScroll: true });
       return;
     }
     const text = msgText;
@@ -98,109 +141,91 @@ export function CartView() {
     }
   }
 
-  if (result) return <LeadResult r={result} onBack={() => setResult(null)} />;
+  // Липкая «Отправить заявку» на телефоне: видна, пока главная кнопка в итоге ниже экрана
+  // (на ноутбуке итог липкий справа и всегда на виду — панель не появляется).
+  const showResult = result && !(result.ok && count > 0);
+  const hasItems = ready && count > 0 && !showResult;
+  useEffect(() => {
+    const el = sendRef.current;
+    if (!hasItems || !el || !("IntersectionObserver" in window)) return;
+    const io = new IntersectionObserver(([e]) => setBarVisible(!e.isIntersecting && e.boundingClientRect.top > 0));
+    io.observe(el);
+    return () => {
+      io.disconnect();
+      setBarVisible(false);
+      // Форма размонтируется с фокусом внутри (экран «Заявка отправлена») — onBlur не придёт.
+      setTyping(false);
+    };
+  }, [hasItems]);
 
-  if (!ready) {
-    return (
-      <div className="wrap py-10" aria-busy="true" aria-label="Загружаем корзину">
-        <div className="h-10 w-48 animate-pulse rounded-xl bg-rasp-100" />
-        <div className="mt-6 h-40 animate-pulse rounded-[24px] bg-rasp-100/70" />
-        <div className="mt-4 h-28 animate-pulse rounded-[24px] bg-rasp-100/50" />
-      </div>
-    );
-  }
-
-  if (count === 0) return <EmptyCart />;
-
-  const submitLabel = sending ? "Отправляем…" : "Отправить заявку";
-
-  return (
-    <>
-      <section className="wrap pt-8 pb-12 md:pt-12 md:pb-20">
-        <header className="mb-6 flex items-end justify-between gap-4 md:mb-8">
-          <div>
-            <p className="eyebrow text-rasp-600">Корзина</p>
-            <h1 className="h-section mt-2">Ваш праздник</h1>
-          </div>
-          <p className="pb-1 text-[15px] font-semibold text-ink-soft tabular-nums">
+  let body;
+  // Next 16 хранит состояние страницы при переходах: экран «Заявка отправлена» показываем, только пока заявка пустая,
+  // иначе после первой заявки вторую не собрать (баг с боевого сайта 02.11).
+  if (showResult) body = <LeadResult r={result} onBack={() => setResult(null)} />;
+  else if (!ready) body = <div className="h-[60vh]" aria-busy="true" aria-label="Загружаем заявку" />;
+  else if (count === 0) body = <EmptyCart />;
+  else
+    body = (
+      <>
+        <header className="mb-5 flex items-end justify-between gap-4">
+          <h1 className="display" style={{ fontSize: "clamp(28px, 6vw, 48px)", color: "var(--rasp-700)" }}>
+            Ваша заявка
+          </h1>
+          <p className="hint num pb-1">
             {count} {plural(count, "позиция", "позиции", "позиций")}
           </p>
         </header>
-
         <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px] lg:items-start lg:gap-10">
-          <div className="flex min-w-0 flex-col gap-8">
-            <CartLines onRemoved={onRemoved} />
+          {/* Пока печатают (форма и поле «км» в переключателях), липкую панель прячем: на iPhone клавиатура поднимает её на поля. */}
+          <div className="grid min-w-0 gap-[18px]" onFocus={() => setTyping(true)} onBlur={() => setTyping(false)}>
+            <div className="sum">
+              <div>
+                Комплект персонажей пришлёт менеджер
+                <small>После заявки покажем героев и образы, вы выберете своё.</small>
+              </div>
+            </div>
+            <Lines remove={remove} />
             <CartOptions />
-
             <form
               id="lead-form"
-              ref={formRef}
               noValidate
               onSubmit={(e) => {
                 e.preventDefault();
                 void submit();
               }}
-              onFocus={(e) => {
-                if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) setTyping(true);
-              }}
-              onBlur={() => setTyping(false)}
               aria-labelledby="lead-title"
-              className="scroll-mt-24"
             >
-              <h2 id="lead-title" className="px-1 font-display text-[22px] font-semibold">
-                Куда прислать ответ
+              <h2 id="lead-title" className="cg" style={{ marginTop: 4, fontSize: 22 }}>
+                Куда прислать ответ <small>обязателен только телефон</small>
               </h2>
-              <p className="mt-1 mb-4 px-1 text-[15px] text-ink-soft">Обязателен только телефон. Остальное — если знаете.</p>
               <LeadForm showErrors={showErrors} phoneRef={phoneRef} />
             </form>
           </div>
 
-          {/* Итог: на телефоне — в конце, на десктопе — липкая колонка справа */}
-          <aside className="lg:sticky lg:top-[calc(var(--header-h)+24px)]">
-            <div ref={summaryRef} className="card overflow-hidden">
-              <div className="stage-soft p-5">
-                <p className="text-[15px] font-semibold text-white/70">Ориентировочно</p>
-                <p className="price mt-1 text-[38px] leading-none" aria-live="polite">
+          {/* Итог: на телефоне — после формы, на ноутбуке — липкая колонка справа */}
+          <aside className="lg:sticky lg:top-[100px]">
+            <div className="overflow-hidden rounded-[var(--r-lg)] bg-white shadow-[0_14px_40px_rgba(126,15,69,0.12)]">
+              <div className="sum" style={{ borderRadius: 0, display: "block" }}>
+                <span className="block">Ориентировочно</span>
+                <b className="num block" aria-live="polite" style={{ color: "var(--lime)", marginTop: 4, fontSize: 40, lineHeight: 1 }}>
                   {money(total)}
-                </p>
-                {custom && <p className="mt-2 text-[14px] text-white/80">+ «Индивидуальный» посчитаем отдельно</p>}
-                <p className="mt-3 text-[14px] leading-snug text-white/70">Точную стоимость подтвердим после заявки</p>
+                </b>
+                <small style={{ marginTop: 8 }}>{custom ? "«Индивидуальный» посчитаем отдельно. " : ""}Точную стоимость подтвердим после заявки</small>
               </div>
-              <div className="flex flex-col gap-3 p-4">
-                <button
-                  type="submit"
-                  form="lead-form"
-                  disabled={sending}
-                  data-track="lead_submit_btn"
-                  className="btn btn-lg btn-primary w-full disabled:opacity-70"
-                >
-                  {sending ? <LoaderCircle size={20} className="animate-spin" /> : <Send size={20} />}
-                  {submitLabel}
+              <div className="send" style={{ padding: 16 }}>
+                <button ref={sendRef} type="submit" form="lead-form" disabled={sending} className="pill pill--hot pill--big2" data-track="lead_submit_btn">
+                  {sending ? "Отправляем…" : "Отправить заявку"}
                 </button>
-                <p className="text-center text-[13px] leading-snug text-ink-soft">
-                  Менеджер напишет в мессенджер и всё уточнит. Без созвонов.
-                </p>
-                {/* Второй путь (раунд 15): часть мам не любит формы. Такая заявка идёт мимо базы — поэтому мелко и со счётчиком. */}
-                <p className="border-t border-line pt-3 text-center text-[14px] text-ink-soft">
+                <p className="hint text-center">Менеджер напишет в мессенджер в течение 15 минут, с 7:00 до 23:00. Без созвонов.</p>
+                {/* Второй путь: напрямую в мессенджер, мимо базы — поэтому мелко и со счётчиком кликов (data-track). */}
+                <p className="hint border-t border-[var(--line)] pt-3 text-center" style={{ fontSize: 14 }}>
                   Удобнее в мессенджере?{" "}
                   <span className="whitespace-nowrap">
-                    <a
-                      href={whatsappLink(contacts, msgText)}
-                      target="_blank"
-                      rel="noopener"
-                      data-track="lead_msg_wa"
-                      className="font-semibold text-rasp-600 underline decoration-rasp-200 underline-offset-4 hover:decoration-rasp-600"
-                    >
+                    <a href={whatsappLink(contacts, msgText)} target="_blank" rel="noopener" data-track="lead_msg_wa" className="font-extrabold text-[var(--hot)] underline underline-offset-4">
                       WhatsApp
                     </a>{" "}
                     ·{" "}
-                    <a
-                      href={telegramLink(contacts, msgText)}
-                      target="_blank"
-                      rel="noopener"
-                      data-track="lead_msg_tg"
-                      className="font-semibold text-rasp-600 underline decoration-rasp-200 underline-offset-4 hover:decoration-rasp-600"
-                    >
+                    <a href={telegramLink(contacts, msgText)} target="_blank" rel="noopener" data-track="lead_msg_tg" className="font-extrabold text-[var(--hot)] underline underline-offset-4">
                       Telegram
                     </a>
                   </span>
@@ -209,69 +234,35 @@ export function CartView() {
             </div>
           </aside>
         </div>
-      </section>
+      </>
+    );
 
-      {/* Низ экрана на телефоне: «Вернуть» после удаления + липкая кнопка заявки над нижней навигацией */}
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+8px)] z-30 flex flex-col gap-2 px-3 lg:bottom-6 lg:left-auto lg:right-6 lg:w-[380px] lg:px-0">
-        {undo && (
-          <div
-            key={undo.at}
-            role="status"
-            className="pointer-events-auto mx-auto flex w-full max-w-md animate-pop items-center gap-3 rounded-2xl bg-ink py-2 pr-2 pl-4 text-white shadow-2xl"
-          >
-            <span className="min-w-0 flex-1 truncate text-[15px]">
-              Убрали: <span className="font-semibold">{undo.label}</span>
+  return (
+    <section className="sec sec--cream" style={{ paddingTop: 28 }}>
+      <div className="wrap" style={{ maxWidth: showResult || count === 0 ? 600 : undefined }}>
+        {body}
+      </div>
+      {undo && !showResult && (
+        <div className="bar bar--undo" key={undo.at} role="status">
+          <div className="undo">
+            <span>
+              Убрали: <b>{undo.l.title}</b>
             </span>
-            <button
-              type="button"
-              onClick={() => {
-                undo.restore(cart);
-                setUndo(null);
-              }}
-              data-track="cart_undo"
-              className="btn btn-sm shrink-0 bg-white/10 text-white hover:bg-white/20"
-            >
-              <Undo2 size={18} /> Вернуть
+            <button type="button" onClick={restore} data-track="cart_undo">
+              Вернуть
             </button>
           </div>
-        )}
-        {barVisible && !typing && (
-          <div className="pointer-events-auto mx-auto flex w-full max-w-md animate-pop items-center gap-3 rounded-[22px] bg-white p-2 pl-4 shadow-[0_12px_40px_-10px_rgb(66_2_15/0.45)] ring-1 ring-line lg:hidden">
-            <span className="min-w-0 flex-1">
-              <span className="block text-[12px] font-semibold text-ink-soft">Ориентировочно</span>
-              <span className="price block truncate text-[20px] leading-tight">{money(total)}</span>
-            </span>
-            {okPhone ? (
-              <button
-                type="submit"
-                form="lead-form"
-                disabled={sending}
-                data-track="lead_submit_bar"
-                className="btn btn-primary shrink-0 px-5 disabled:opacity-70"
-              >
-                {sending ? <LoaderCircle size={18} className="animate-spin" /> : <Send size={18} />}
-                {submitLabel}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  if (state.form.name.trim()) focusPhone();
-                  else {
-                    const name = formRef.current?.querySelector<HTMLInputElement>("#lead-name");
-                    name?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    name?.focus({ preventScroll: true });
-                  }
-                }}
-                data-track="lead_bar_to_form"
-                className="btn btn-primary shrink-0 px-5"
-              >
-                Оформить <ArrowRight size={18} />
-              </button>
-            )}
-          </div>
-        )}
-      </div>
-    </>
+        </div>
+      )}
+      {hasItems && barVisible && !typing && !undo && (
+        <div className="bar">
+          {/* Без телефона submit() сам прокрутит к полю и подсветит его. */}
+          <button type="button" className="barBtn barBtn--send" disabled={sending} onClick={() => void submit()} data-track="lead_submit_bar">
+            <span>{sending ? "Отправляем…" : "Отправить заявку"}</span>
+            <span className="barSum num">{money(total)}</span>
+          </button>
+        </div>
+      )}
+    </section>
   );
 }

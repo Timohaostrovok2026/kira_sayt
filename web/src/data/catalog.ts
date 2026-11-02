@@ -122,6 +122,45 @@ export const KINDS: { id: Kind; title: string; slug: string; blurb: string }[] =
   { id: "Выпускной", title: "Выпускной", slug: "vypusknoj", blurb: "Для 4 класса, до 20 детей" },
 ];
 
+/**
+ * Виды программ на сайте — порядок, названия и цвета по черновику Кирилла v11.
+ * Хэллоуин убран с сайта (02.11), но остаётся в KINDS: по нему проверяется админка.
+ */
+export const SITE_KINDS: { id: Kind; title: string; tile: string }[] = [
+  { id: "Анимация", title: "Анимация", tile: "ft0" },
+  { id: "Настольные игры", title: "Настольные игры", tile: "ft1" },
+  { id: "Квест", title: "Квесты", tile: "ft2" },
+  { id: "Вечеринка", title: "Вечеринки", tile: "ft3" },
+  { id: "Новый год", title: "Зимние программы", tile: "ft4" },
+  { id: "Выпускной", title: "Выпускной", tile: "ft0" },
+];
+
+/** Цвет обложки программы по виду (классы k-* в site.css). */
+export const KIND_CLASS: Record<Kind, string> = {
+  Анимация: "k-anim",
+  "Настольные игры": "k-game",
+  Квест: "k-quest",
+  Вечеринка: "k-party",
+  "Новый год": "k-ny",
+  Хэллоуин: "k-hal",
+  Выпускной: "k-grad",
+};
+
+/** Крупная цифра возраста на обложке: «1–8», «5+». */
+export function ageBig(item: { a?: number | null; b?: number | null }) {
+  const { a, b } = item;
+  if (a == null && b == null) return "Все";
+  if (b == null) return `${a}+`;
+  if (a == null) return `до ${b}`;
+  return `${a}–${b}`;
+}
+
+/** Допы к анимации — кнопками на странице программ вида «Анимация» (черновик v11). */
+export const ANIMATION_EXTRAS = ["e_focus", "e_bubbles", "e_aqua"];
+
+/** Шоу на главной («Вау-момент праздника») — подборка Кирилла. */
+export const HOME_SHOWS = ["e_cryo45", "e_ice", "e_soap", "e_paper", "e_neon", "e_silver"];
+
 export const EXTRA_GROUPS: { id: ExtraGroup; title: string }[] = [
   { id: "Шоу", title: "Шоу" },
   { id: "Мастер-классы", title: "Мастер-классы" },
@@ -213,7 +252,8 @@ export function calcPackagePrice(
     if (e) full += e.price * (it.qty || 1);
   });
   const d = k.disc ?? 0;
-  const price = k.override ?? Math.round((full * (1 - d / 100)) / 100) * 100;
+  // Целочисленно: 5 500 × (1 − 0,3) в дробях даёт 3 849,99… и округлялось бы вниз.
+  const price = k.override ?? Math.round((full * (100 - d)) / 10000) * 100;
   return { full, price, save: full - price };
 }
 
