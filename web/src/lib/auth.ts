@@ -35,8 +35,10 @@ export function safeEqual(a: string, b: string) {
 
 /** Проверка входа. Вызывать только внутри <Suspense> или серверной функции: читает cookies(). */
 export async function isAuthed() {
+  // Куки — до проверки пароля: иначе при сборке без STATS_PASSWORD страница запекается статичной формой входа
+  // и не пускает даже с верным паролем (2026-11-02, новый сервер).
+  const value = (await cookies()).get(COOKIE)?.value;
   const cfg = statsPassword();
   if (!cfg) return false;
-  const value = (await cookies()).get(COOKIE)?.value;
   return !!value && safeEqual(value, tokenFor(cfg.password));
 }
