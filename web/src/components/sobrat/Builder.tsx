@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useSyncExternalStore } from "react";
 import { useSearchParams } from "next/navigation";
 import { AGE_GROUPS, MKAD_BASE, MKAD_PER_KM, SITE_KINDS, SOUND_PRICE, SPECIAL_EXTRAS, ageFits, type AgeGroupId, type Extra, type Kind } from "@/data/catalog";
 import { useCatalog } from "@/lib/catalog-context";
@@ -9,9 +9,24 @@ import { LINE_GROUPS, useCart, useRemoveLine } from "@/lib/cart";
 import { money, plural } from "@/lib/format";
 import { track } from "@/lib/track";
 import { ExtraCard, ProgramCard } from "@/components/cards";
-import { DOP_GROUPS, STEPS, parseAge, parseGroup, parseKind, parseStep, type StepN } from "./model";
+import { ANY_AGE, DOP_GROUPS, STEPS, parseAge, parseGroup, parseKind, resolveStep, type StepN } from "./model";
 
 const AGE_TILE = ["wa1", "wa2", "wa3", "wa4"];
+// Ответ на «Сколько лет?» помним до закрытия вкладки: «← К программам» со страницы программы не спрашивает заново.
+const AGE_KEY = "uly-builder-age";
+const noSubscribe = () => () => {};
+function readAge() {
+  try {
+    return sessionStorage.getItem(AGE_KEY);
+  } catch {
+    return null;
+  }
+}
+function saveAge(v: string) {
+  try {
+    sessionStorage.setItem(AGE_KEY, v);
+  } catch {}
+}
 const MEMO = (
   <div className="memo">
     <h3>Памятка к любой программе</h3>
@@ -111,10 +126,12 @@ export function Builder() {
   const { programs, extras, packages } = useCatalog();
   // Скидки пакетов правит Кирилл в админке — обещание «до N%» берём из каталога.
   const maxDisc = Math.max(0, ...packages.map((k) => k.disc ?? 0));
-  const age = parseAge(sp.get("age"));
+  const storedAge = useSyncExternalStore(noSubscribe, readAge, () => null);
+  const rawAge = sp.get("age") ?? storedAge;
+  const age = parseAge(rawAge);
   const kind = parseKind(sp.get("kind"));
   const xg = parseGroup(sp.get("xg"));
-  const step = parseStep(sp.get("step"), age || kind ? 2 : 1);
+  const { asked, step, next } = resolveStep(rawAge, sp.get("step"), !!kind || sp.get("age") != null);
 
   const setQuery = useCallback((patch: Record<string, string | null>, push = true) => {
     const p = new URLSearchParams(window.location.search);
@@ -140,9 +157,15 @@ export function Builder() {
     track("builder_step", { step });
   }, [step]);
 
+  // Формат с главной (?kind=) не сбрасываем: клиент уже выбрал, что хочет.
   const chooseAge = (a: AgeGroupId | null) => {
     track("builder_age", { age: a ?? "skip" });
-    goStep(2, { age: a, kind: null });
+    saveAge(a ?? ANY_AGE);
+    goStep(next, { age: a ?? ANY_AGE });
+  };
+  const pickAge = (a: AgeGroupId | null) => {
+    saveAge(a ?? ANY_AGE);
+    setQuery({ age: a ?? ANY_AGE }, false);
   };
 
   const list = programs.filter((p) => (!kind || p.kind === kind) && ageFits(p, age));
@@ -187,11 +210,11 @@ export function Builder() {
         <StepHead n={2} title="Выберите программу" text="Это основа праздника. Комплект персонажей пришлёт менеджер." />
         <div className="filters" role="group" aria-label="Возраст ребёнка">
           <span className="lbl">Возраст</span>
-          <button className="fchip" type="button" aria-pressed={!age} onClick={() => setQuery({ age: null }, false)}>
+          <button className="fchip" type="button" aria-pressed={!age} onClick={() => pickAge(null)}>
             Любой
           </button>
           {AGE_GROUPS.map((g) => (
-            <button key={g.id} className="fchip" type="button" aria-pressed={age === g.id} onClick={() => setQuery({ age: g.id }, false)}>
+            <button key={g.id} className="fchip" type="button" aria-pressed={age === g.id} onClick={() => pickAge(g.id)}>
               {g.label}
             </button>
           ))}
@@ -284,7 +307,15 @@ export function Builder() {
           {STEPS.map((s) => {
             const c = s.n < step ? "done" : s.n === step ? "cur" : s.n === step + 1 ? "nxt" : "";
             return (
-              <button key={s.n} type="button" className={`wzs ${c}`} aria-current={s.n === step ? "step" : undefined} onClick={() => goStep(s.n)}>
+              <button
+                key={s.n}
+                type="button"
+                className={`wzs ${c}`}
+                aria-current={s.n === step ? "step" : undefined}
+                // Возраст обязателен (Кирилл, 03.11): пока не ответили — вперёд только выбором плитки.
+                disabled={!asked && s.n > 1}
+                onClick={() => goStep(s.n)}
+              >
                 {c === "nxt" && (
                   <span className="wza" aria-hidden="true">
                     <b>›</b>
@@ -299,25 +330,23 @@ export function Builder() {
           })}
         </nav>
         {body}
-        <div className="wznav">
-          {step > 1 ? (
+        {step > 1 && (
+          <div className="wznav">
             <button className="pill pill--ghost" type="button" onClick={() => goStep((step - 1) as StepN)}>
               ← Назад
             </button>
-          ) : (
-            <span />
-          )}
-          {step === 6 ? (
-            <Link className="pill pill--lime" href="/korzina" data-track="builder_checkout">
-              Оформить заявку
-            </Link>
-          ) : (
-            // Без пульсации (владелец, 02.11): «перегружает дизайн».
-            <button className="pill pill--hot" type="button" onClick={() => goStep((step + 1) as StepN)} data-track={`builder_next_${step}`}>
-              {step === 5 ? "Готово" : "Дальше"} →
-            </button>
-          )}
-        </div>
+            {step === 6 ? (
+              <Link className="pill pill--lime" href="/korzina" data-track="builder_checkout">
+                Оформить заявку
+              </Link>
+            ) : (
+              // Без пульсации (владелец, 02.11): «перегружает дизайн».
+              <button className="pill pill--hot" type="button" onClick={() => goStep((step + 1) as StepN)} data-track={`builder_next_${step}`}>
+                {step === 5 ? "Готово" : "Дальше"} →
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </section>
   );

@@ -41,7 +41,8 @@ export function CartBar() {
     <div className="bar">
       <Link ref={ref} href="/korzina" className="barBtn" data-track="bar_cart">
         <span>Заявка · {count}</span>
-        <span className="barSum num">{money(total)}</span>
+        {/* Только «Индивидуальный» — суммы нет, его считают после разговора: «0 ₽» не показываем. */}
+        {total > 0 && <span className="barSum num">{money(total)}</span>}
       </Link>
     </div>
   );

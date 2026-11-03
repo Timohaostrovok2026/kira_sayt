@@ -4,16 +4,25 @@ import { useState } from "react";
 import type { Review, SiteContent } from "@/data/site";
 import { plural } from "@/lib/format";
 import { SectionHead, Stars } from "@/components/cards";
+import { useSmoothHeight } from "@/components/Fold";
 
 function ReviewItem({ r }: { r: Review }) {
   const long = r.text.length > 300;
   const [open, setOpen] = useState(false);
+  const { ref: foldRef, mark: markFold } = useSmoothHeight<HTMLElement>(open);
   return (
-    <article className="rev">
+    <article ref={foldRef} className="rev">
       <Stars />
       <p className={long && !open ? "clamp" : undefined}>«{r.text}»</p>
       {long && (
-        <button type="button" className="more" onClick={() => setOpen(!open)}>
+        <button
+          type="button"
+          className="more"
+          onClick={() => {
+            markFold();
+            setOpen(!open);
+          }}
+        >
           {open ? "Свернуть" : "Читать полностью"}
         </button>
       )}

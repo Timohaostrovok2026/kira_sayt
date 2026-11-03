@@ -4,6 +4,7 @@ import type { Contacts, FaqItem, GalleryItem, Step, TrustStat } from "@/data/sit
 import { money, plural } from "@/lib/format";
 import { Photo } from "@/components/Photo";
 import { ExtraCard, PackageCard, ProgramCard, SectionHead } from "@/components/cards";
+import { Fold } from "@/components/Fold";
 import { LiveRibbon } from "./LiveRibbon";
 
 /** «С чего начнём?» — разноцветные плитки форматов, сезонный первым (черновик Кирилла v11, без фото героев). */
@@ -239,10 +240,9 @@ export function Faq({ faq, contacts }: { faq: FaqItem[]; contacts: Contacts }) {
         </div>
         <div className="faqs">
           {faq.map((q) => (
-            <details key={q.q} className="fq">
-              <summary>{q.q}</summary>
+            <Fold key={q.q} className="fq" summary={q.q}>
               <p>{q.a}</p>
-            </details>
+            </Fold>
           ))}
         </div>
         <div className="cta-center">

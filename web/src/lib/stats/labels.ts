@@ -91,7 +91,7 @@ const CLICK_EXACT: Record<string, string> = {
   builder_bar_checkout: "Конструктор, нижняя панель: «Оформить»",
   builder_add_hero: "Конструктор: «Добавить героя»",
   builder_to_packages: "Конструктор: «Готовые пакеты»",
-  builder_age_skip: "Конструктор: пропустили возраст",
+  builder_age_skip: "Конструктор: любой возраст",
   costumes_bar_cart: "Костюмы, панель: «В корзину»",
   costumes_bar_programs: "Костюмы, панель: «К программам»",
   costume_sheet_to_programs: "Карточка героя: «К программам»",

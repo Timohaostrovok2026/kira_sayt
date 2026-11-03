@@ -6,6 +6,7 @@ import { KIND_CLASS, ageBig, ageText, lines, slotRef, splitHow, type Extra, type
 import { useCart } from "@/lib/cart";
 import { useCatalog } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
+import { Fold, useSmoothHeight } from "./Fold";
 
 /**
  * Акцентное слово заголовка (Nauryz): как в черновике Кирилла — последнее слово из 4–9 букв.
@@ -122,8 +123,7 @@ export function ExtraCard({ e }: { e: Extra }) {
         </div>
       )}
       {inc.length > 0 && (
-        <details>
-          <summary>Что входит</summary>
+        <Fold summary="Что входит">
           <ul className="checks">
             {inc.map((t, i) => (
               <li key={i}>
@@ -131,7 +131,7 @@ export function ExtraCard({ e }: { e: Extra }) {
               </li>
             ))}
           </ul>
-        </details>
+        </Fold>
       )}
       <div className="card-foot">
         <div className="cost num">
@@ -164,6 +164,7 @@ export function PackageCard({ k }: { k: Package }) {
   const [own, setOwn] = useState<Record<number, string>>({});
   const choices = inCart?.choices ?? own;
   const [open, setOpen] = useState(false);
+  const { ref: foldRef, mark: markFold } = useSmoothHeight<HTMLElement>(open);
 
   if (k.custom) {
     return (
@@ -193,12 +194,20 @@ export function PackageCard({ k }: { k: Package }) {
   const hasSlot = k.items.some((it) => it.alts && it.alts.length > 0);
   const dur = /длительность/i.test(k.note) ? `Длительность: ${k.note.replace(/\s*длительность\s*/i, "").trim()}` : k.note;
   return (
-    <article className={`pack${hasSlot ? " pack--c" : ""}${open ? " open" : ""}`}>
+    <article ref={foldRef} className={`pack${hasSlot ? " pack--c" : ""}${open ? " open" : ""}`}>
       <span className="badge">{k.disc ? `Скидка ${k.disc}%` : "Пакет"}</span>
       <h3>{k.name}</h3>
       <p className="tagl">{k.tag}</p>
       {hasSlot && (
-        <button className="pkx" type="button" aria-expanded={open} onClick={() => setOpen(!open)}>
+        <button
+          className="pkx"
+          type="button"
+          aria-expanded={open}
+          onClick={() => {
+            markFold();
+            setOpen(!open);
+          }}
+        >
           <span>{open ? "Свернуть состав" : "Развернуть состав"}</span>
           <i aria-hidden="true">{open ? "▴" : "▾"}</i>
         </button>

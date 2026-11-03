@@ -5,6 +5,7 @@ import { useState } from "react";
 import { useSite } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
 import { copyText, telegramLink, whatsappLink } from "./lead";
+import { Fold } from "@/components/Fold";
 
 export type LeadResultData = { ok: true; id: number; text: string; total: number } | { ok: false; text: string; total: number; limited?: boolean };
 
@@ -82,10 +83,9 @@ export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => voi
       </p>
       <Messengers text={r.text} place="lead_fail" />
       <CopyButton text={r.text} />
-      <details className="empty w-full text-left">
-        <summary className="cursor-pointer font-bold">Текст заявки</summary>
+      <Fold className="empty w-full text-left" summaryClassName="cursor-pointer font-bold" summary="Текст заявки">
         <pre className="mt-3 whitespace-pre-wrap break-words font-sans text-[15px] leading-relaxed select-all">{r.text}</pre>
-      </details>
+      </Fold>
       <button type="button" onClick={onBack} className="back" style={{ margin: 0 }} data-track="lead_fail_back">
         ← Вернуться и попробовать ещё раз
       </button>

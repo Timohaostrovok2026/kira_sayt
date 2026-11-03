@@ -155,7 +155,7 @@ export function InstallPrompt() {
 
   if (!visible) return null;
   return (
-    <div className="fixed inset-x-3 bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+8px)] z-30 mx-auto max-w-md animate-rise lg:hidden">
+    <div className="pwa-float fixed inset-x-3 bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom)+8px)] z-30 mx-auto max-w-md animate-rise lg:hidden">
       <div className="rounded-[22px] border border-white/10 bg-rasp-950/90 p-3 text-white shadow-2xl shadow-black/40 backdrop-blur-xl">
         <div className="flex items-center gap-3">
           <Image
@@ -186,7 +186,7 @@ export function InstallPrompt() {
             role="dialog"
             aria-label="Как добавить сайт на экран «Домой»"
             tabIndex={-1}
-            className="mt-3 rounded-2xl bg-white/10 p-3 text-[15px] leading-snug outline-none"
+            className="mt-3 animate-rise rounded-2xl bg-white/10 p-3 text-[15px] leading-snug outline-none"
           >
             <p className="flex flex-wrap items-center gap-x-1.5">
               1. Нажмите «Поделиться»

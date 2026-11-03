@@ -139,7 +139,11 @@
 .barBtn.bump { animation: bbump 0.45s ease; }
 @keyframes bbump { 40% { transform: scale(1.08); } }
 @media (max-width: 899px) {
-  .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); padding: 0 12px 8px; }
+  /* Полоса стоит вплотную на нижнем меню и в его цвет — без щели, в которую видно страницу (Кирилл, 03.11). */
+  .bar { bottom: calc(64px + env(safe-area-inset-bottom, 0px)); padding: 8px 12px; pointer-events: auto; background: rgba(38, 3, 15, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .barBtn { box-shadow: none; }
+  /* Плашка «Добавьте на экран» — над полосой, иначе полоса закрывает её кнопки. */
+  body:has(.bar) .pwa-float { bottom: calc(64px + 66px + 8px + env(safe-area-inset-bottom, 0px)); }
   .barBtn { width: 100%; max-width: 560px; justify-content: space-between; height: 50px; font-size: 14px; }
   .barBtn::after { content: "Оформить →"; font-size: 12px; letter-spacing: 0.06em; margin-left: auto; opacity: 0.75; }
   .barSum { margin-left: auto; margin-right: 8px; border-left: 0; padding-left: 0; }
