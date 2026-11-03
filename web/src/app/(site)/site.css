@@ -141,6 +141,7 @@
   box-shadow: 0 10px 28px rgba(38, 3, 15, 0.4); text-decoration: none;
 }
 .barSum { font-family: var(--display); font-weight: 400; font-size: 17px; letter-spacing: 0; text-transform: none; padding-left: 10px; border-left: 2px solid rgba(38, 3, 15, 0.25); }
+.barGo { display: none; }
 .barBtn.bump { animation: bbump 0.45s ease; }
 @keyframes bbump { 40% { transform: scale(1.08); } }
 @media (max-width: 899px) {
@@ -150,7 +151,7 @@
   /* Плашка «Добавьте на экран» — над полосой, иначе полоса закрывает её кнопки. */
   body:has(.bar) .pwa-float { bottom: calc(64px + 66px + 8px + env(safe-area-inset-bottom, 0px)); }
   .barBtn { width: 100%; max-width: 560px; justify-content: space-between; height: 50px; font-size: 14px; }
-  .barBtn::after { content: "Оформить →"; font-size: 12px; letter-spacing: 0.06em; margin-left: auto; opacity: 0.75; }
+  .barGo { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; letter-spacing: 0.06em; margin-left: auto; opacity: 0.75; }
   .barSum { margin-left: auto; margin-right: 8px; border-left: 0; padding-left: 0; }
 }
 
@@ -189,3 +190,16 @@
 }
 .vhome .sec { padding-block: clamp(34px, 6vw, 72px); }
 .vhome .brace { color: var(--pink-soft); }
+
+/* ---- стрелки (components/Arrows.tsx): одни векторные значки по всему сайту ---- */
+.ar { display: inline-block; width: 1.15em; height: 1.15em; vertical-align: -0.22em; flex: none; }
+/* «вперёд» — мягкий толчок раз в 2,4 с, при наведении чаще; без пульсации кнопки (решение 02.11 про «Дальше») */
+.ar--go { animation: argo 2.4s ease-in-out infinite; }
+a:hover .ar--go, button:hover .ar--go, a:focus-visible .ar--go, button:focus-visible .ar--go { animation-duration: 0.9s; }
+@keyframes argo { 0%, 50%, 100% { transform: none; } 25% { transform: translateX(4px); } }
+.ar--back { transition: transform 0.2s ease; }
+a:hover .ar--back, button:hover .ar--back { transform: translateX(-4px); }
+.ar--chev { transition: transform 0.28s cubic-bezier(0.2, 0.7, 0.2, 1); }
+.ar--chev.is-open, details[open]:not([data-closing="1"]) > summary .ar--chev { transform: rotate(180deg); }
+@media (prefers-reduced-motion: reduce) { .ar { animation: none !important; transition: none !important; } }
+

@@ -7,6 +7,7 @@ import { useCart } from "@/lib/cart";
 import { useCatalog } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
 import { Fold, useSmoothHeight } from "./Fold";
+import { Chevron } from "./Arrows";
 
 /**
  * Акцентное слово заголовка (Nauryz): как в черновике Кирилла — последнее слово из 4–9 букв.
@@ -149,7 +150,13 @@ export function ExtraCard({ e }: { e: Extra }) {
         </div>
       )}
       {inc.length > 0 && (
-        <Fold summary="Что входит">
+        <Fold
+          summary={
+            <>
+              Что входит <Chevron />
+            </>
+          }
+        >
           <ul className="checks">
             {inc.map((t, i) => (
               <li key={i}>
@@ -233,7 +240,7 @@ export function PackageCard({ k }: { k: Package }) {
           }}
         >
           <span>{open ? "Свернуть состав" : "Развернуть состав"}</span>
-          <i aria-hidden="true">{open ? "▴" : "▾"}</i>
+          <Chevron open={open} />
         </button>
       )}
       <div className="pbody">

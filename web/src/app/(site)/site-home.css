@@ -105,7 +105,8 @@
 .xcard { display: flex; flex-direction: column; gap: 8px; min-width: 0; background: #fff; color: var(--text); border-radius: var(--r-md); padding: 18px 20px; box-shadow: 0 10px 30px rgba(126, 15, 69, 0.08); }
 .xcard h4 { font-family: var(--head); font-weight: 900; text-transform: uppercase; font-size: 18px; line-height: 1.02; letter-spacing: -0.012em; color: var(--rasp-700); }
 .xcard .intro { font-size: 15px; color: var(--text-soft); }
-.xcard details summary { cursor: pointer; font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hot); }
+.xcard details summary { cursor: pointer; list-style: none; font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hot); }
+.xcard details summary::-webkit-details-marker { display: none; }
 .xcard details[open] summary { margin-bottom: 10px; }
 .xcard .checks { font-size: 14.5px; }
 /* колонка, а не сетка: цена и «Добавить» всегда внизу карточки, ровно по ряду — и без «Что входит» */
@@ -184,7 +185,7 @@
 .opt[aria-pressed="true"] { background: var(--lime); border-color: var(--lime); color: var(--ink-deep); }
 .opt span:last-child { white-space: nowrap; font-variant-numeric: tabular-nums; }
 .pkx { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 44px; border-radius: 999px; border: 1.5px solid rgba(255, 255, 255, 0.45); background: rgba(255, 255, 255, 0.08); color: #fff; font: 800 13px/1 var(--body); letter-spacing: 0.06em; text-transform: uppercase; }
-.pkx i { font-style: normal; color: var(--lime); font-size: 15px; }
+.pkx .ar { color: var(--lime); }
 .pfoot { margin-top: auto; display: grid; gap: 12px; }
 .pprice { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .pprice b { font-family: var(--display); font-weight: 400; font-size: 44px; line-height: 1; }

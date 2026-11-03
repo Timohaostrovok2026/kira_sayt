@@ -5,6 +5,7 @@ import { useEffect, useRef } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCart } from "@/lib/cart";
 import { money } from "@/lib/format";
+import { Go } from "@/components/Arrows";
 
 /**
  * Липкая «Заявка · N · сумма» над нижним меню. В корзине и на последнем шаге конструктора не нужна.
@@ -43,6 +44,9 @@ export function CartBar() {
         <span>Заявка · {count}</span>
         {/* Только «Индивидуальный» — суммы нет, его считают после разговора: «0 ₽» не показываем. */}
         {total > 0 && <span className="barSum num">{money(total)}</span>}
+        <span className="barGo">
+          Оформить <Go />
+        </span>
       </Link>
     </div>
   );

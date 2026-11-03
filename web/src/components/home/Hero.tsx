@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Photo } from "@/components/Photo";
+import { Go } from "@/components/Arrows";
 
 export interface HeroPhoto {
   src: string;
@@ -50,7 +51,9 @@ export function Hero({ photos, newYear, telegram }: { photos: HeroPhoto[]; newYe
             <Link className="nybar" href={`/sobrat?kind=${encodeURIComponent("Новый год")}`} data-track="hero_season">
               <b>Новый год</b>
               <span>Даты на декабрь уже бронируют</span>
-              <i>Выбрать →</i>
+              <i>
+                Выбрать <Go />
+              </i>
             </Link>
           </div>
         </section>

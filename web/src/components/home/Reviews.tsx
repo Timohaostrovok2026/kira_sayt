@@ -5,6 +5,7 @@ import type { Review, SiteContent } from "@/data/site";
 import { plural } from "@/lib/format";
 import { SectionHead, Stars } from "@/components/cards";
 import { useSmoothHeight } from "@/components/Fold";
+import { Go } from "@/components/Arrows";
 
 function ReviewItem({ r }: { r: Review }) {
   const long = r.text.length > 300;
@@ -56,7 +57,9 @@ export function Reviews({ site }: { site: SiteContent }) {
             <span>
               <Stars />
               <b>{n(site.profiReviewsCount)} на Профи.ру</b>
-              <small>Читать все отзывы →</small>
+              <small>
+                Читать все отзывы <Go />
+              </small>
             </span>
           </a>
           <a className="ymap" href={site.yandexUrl} target="_blank" rel="noopener" data-track="reviews_yandex">
@@ -64,7 +67,9 @@ export function Reviews({ site }: { site: SiteContent }) {
             <span>
               <Stars />
               <b>{n(site.yandexReviewsCount)} на Яндекс Картах</b>
-              <small>Читать все отзывы →</small>
+              <small>
+                Читать все отзывы <Go />
+              </small>
             </span>
           </a>
         </div>

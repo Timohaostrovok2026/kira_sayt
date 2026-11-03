@@ -10,6 +10,7 @@ import { money, plural } from "@/lib/format";
 import { track } from "@/lib/track";
 import { ExtraCard, ProgramCard } from "@/components/cards";
 import { ANY_AGE, DOP_GROUPS, STEPS, parseAge, parseGroup, parseKind, resolveStep, type StepN } from "./model";
+import { Back, Go, Step } from "@/components/Arrows";
 
 const AGE_TILE = ["wa1", "wa2", "wa3", "wa4"];
 // Ответ на «Сколько лет?» помним до закрытия вкладки: «← К программам» со страницы программы не спрашивает заново.
@@ -245,7 +246,9 @@ export function Builder() {
         <Link className="packsban" href="/pakety" data-track="builder_to_packages">
           <b>Не хотите собирать?</b>
           <span>{maxDisc ? `Готовые пакеты со скидкой до ${maxDisc}%` : "Готовые пакеты: всё уже подобрано"}</span>
-          <i aria-hidden="true">→</i>
+          <i aria-hidden="true">
+            <Go />
+          </i>
         </Link>
       </>
     );
@@ -318,9 +321,15 @@ export function Builder() {
               >
                 {c === "nxt" && (
                   <span className="wza" aria-hidden="true">
-                    <b>›</b>
-                    <b>›</b>
-                    <b>›</b>
+                    <b>
+                      <Step />
+                    </b>
+                    <b>
+                      <Step />
+                    </b>
+                    <b>
+                      <Step />
+                    </b>
                   </span>
                 )}
                 <i>{s.n < step ? "✓" : s.n}</i>
@@ -333,7 +342,7 @@ export function Builder() {
         {step > 1 && (
           <div className="wznav">
             <button className="pill pill--ghost" type="button" onClick={() => goStep((step - 1) as StepN)}>
-              ← Назад
+              <Back /> Назад
             </button>
             {step === 6 ? (
               <Link className="pill pill--lime" href="/korzina" data-track="builder_checkout">
@@ -342,7 +351,7 @@ export function Builder() {
             ) : (
               // Без пульсации (владелец, 02.11): «перегружает дизайн».
               <button className="pill pill--hot" type="button" onClick={() => goStep((step + 1) as StepN)} data-track={`builder_next_${step}`}>
-                {step === 5 ? "Готово" : "Дальше"} →
+                {step === 5 ? "Готово" : "Дальше"} <Go />
               </button>
             )}
           </div>

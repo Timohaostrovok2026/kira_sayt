@@ -6,6 +6,7 @@ import { useSite } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
 import { copyText, telegramLink, whatsappLink } from "./lead";
 import { Fold } from "@/components/Fold";
+import { Back, Chevron } from "@/components/Arrows";
 
 export type LeadResultData = { ok: true; id: number; text: string; total: number } | { ok: false; text: string; total: number; limited?: boolean };
 
@@ -83,11 +84,19 @@ export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => voi
       </p>
       <Messengers text={r.text} place="lead_fail" />
       <CopyButton text={r.text} />
-      <Fold className="empty w-full text-left" summaryClassName="cursor-pointer font-bold" summary="Текст заявки">
+      <Fold
+        className="empty w-full text-left"
+        summaryClassName="cursor-pointer list-none font-bold [&::-webkit-details-marker]:hidden"
+        summary={
+          <>
+            Текст заявки <Chevron />
+          </>
+        }
+      >
         <pre className="mt-3 whitespace-pre-wrap break-words font-sans text-[15px] leading-relaxed select-all">{r.text}</pre>
       </Fold>
       <button type="button" onClick={onBack} className="back" style={{ margin: 0 }} data-track="lead_fail_back">
-        ← Вернуться и попробовать ещё раз
+        <Back /> Вернуться и попробовать ещё раз
       </button>
     </div>
   );

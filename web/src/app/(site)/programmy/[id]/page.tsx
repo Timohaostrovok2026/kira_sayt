@@ -6,6 +6,7 @@ import { ANIMATION_EXTRAS, KIND_CLASS, MKAD_BASE, MKAD_PER_KM, SOUND_PRICE, SPEC
 import { getCatalog } from "@/lib/content/get";
 import { money } from "@/lib/format";
 import { AddExtraButton, ProgramToggle } from "./ProgramActions";
+import { Back, Go } from "@/components/Arrows";
 
 type Props = { params: Promise<{ id: string }> };
 
@@ -66,7 +67,7 @@ async function ProgramView({ params }: Props) {
     <section className="sec sec--cream sec--top">
       <div className="wrap">
         <Link className="back" href="/sobrat?step=2">
-          ← Все программы
+          <Back /> Все программы
         </Link>
         <div className={`dhead ${KIND_CLASS[p.kind] ?? "k-anim"}`}>
           <div className="tags">
@@ -147,7 +148,7 @@ async function ProgramView({ params }: Props) {
                 </div>
                 <p className="hint" style={{ marginTop: 12 }}>
                   <Link className="back" style={{ margin: 0 }} href="/sobrat?step=3">
-                    Все шоу и допы →
+                    Все шоу и допы <Go />
                   </Link>
                 </p>
               </div>
