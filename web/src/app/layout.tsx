@@ -29,6 +29,8 @@ export const metadata: Metadata = {
   applicationName: "Улыбайся",
   // На iPhone с экрана «Домой» открывается без адресной строки, как приложение.
   appleWebApp: { capable: true, title: "Улыбайся", statusBarStyle: "black" },
+  // Safari на iPhone сам делает ссылкой «Позвонить» любое длинное число — так ИНН в подвале звонил. Звонки — только явные tel:.
+  formatDetection: { telephone: false },
   // Иконки и картинка превью — файлами в app/ (favicon.ico, icon.png, apple-icon.png, opengraph-image.jpg).
   // Поле icons здесь не задавать: с ним Next молча выкидывает файловые иконки и во вкладке пусто.
   openGraph: {
