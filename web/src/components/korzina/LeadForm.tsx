@@ -10,7 +10,7 @@ export function LeadForm({ showErrors, phoneRef }: { showErrors: boolean; phoneR
   const f = state.form;
   const [minDate] = useState(todayIso);
   const [phoneTouched, setPhoneTouched] = useState(false);
-  const phoneErr = (showErrors || phoneTouched) && !phoneValid(f.phone) ? "Проверьте номер: нужно 10 цифр после +7" : undefined;
+  const phoneErr = (showErrors || phoneTouched) && !phoneValid(f.phone) ? "Нужно 10 цифр после +7" : undefined;
 
   return (
     <div className="grid gap-3">

@@ -148,7 +148,7 @@ export function Builder() {
   const goStep = useCallback(
     (n: StepN, extra: Record<string, string | null> = {}) => {
       setQuery({ step: String(n), ...extra });
-      window.scrollTo({ top: 0 });
+      window.scrollTo({ top: 0, behavior: "instant" });
     },
     [setQuery],
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { collapseAway } from "@/components/Fold";
 import { LINE_GROUPS, useCart, useRemoveLine, type CartLine } from "@/lib/cart";
 import { money, plural } from "@/lib/format";
 import { flushNow, track, visitorId } from "@/lib/track";
@@ -11,45 +12,89 @@ import { LeadForm } from "./LeadForm";
 import { LeadResult, type LeadResultData } from "./LeadResult";
 import { buildLeadText, isPerUnit, phoneValid, telegramLink, whatsappLink } from "./lead";
 
-/** Позиции заявки по группам: количество для допов, «Убрать» у всех. */
-function Lines({ remove }: { remove: (l: CartLine) => void }) {
+/** Убранная позиция: на её месте «Убрали · Вернуть», потом строка плавно схлопывается. */
+type Gone = { l: CartLine; choices?: Record<number, string>; idx: number; key: string; until: number };
+const GONE_MS = 3000;
+
+function GoneRow({ g, onRestore, onDone }: { g: Gone; onRestore: () => void; onDone: () => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  // onDone меняется на каждой отрисовке корзины — таймер от этого не перезапускаем.
+  const done = useRef(onDone);
+  useEffect(() => {
+    done.current = onDone;
+  });
+  // Срок — от момента «Убрать», а не от монтирования: корзина может перерисовать плашку (стала пустой, экран ошибки и назад).
+  const until = g.until;
+  useEffect(() => {
+    const t = setTimeout(
+      () => {
+        if (ref.current) collapseAway(ref.current, () => done.current());
+        else done.current();
+      },
+      Math.max(0, until - Date.now()),
+    );
+    return () => clearTimeout(t);
+  }, [until]);
+  return (
+    <div ref={ref} className="li li--gone" role="status">
+      <div className="undo undo--inline">
+        <span>
+          Убрали: <b>{g.l.title}</b>
+        </span>
+        <button type="button" onClick={onRestore} data-track="cart_undo">
+          Вернуть
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/** Позиции заявки по группам: количество для допов, «Убрать» у всех; убранные — на своём месте ещё 3 секунды. */
+function Lines({ remove, gone, restore, forget }: { remove: (l: CartLine) => void; gone: Gone[]; restore: (g: Gone) => void; forget: (g: Gone) => void }) {
   const { lines, setExtra } = useCart();
   const { extraById } = useCatalog();
   return (
     <div>
       {LINE_GROUPS.map((g) => {
         const ls = lines.filter((l) => l.type === g.type);
-        if (!ls.length) return null;
+        const gs = gone.filter((x) => x.l.type === g.type).sort((a, b) => a.idx - b.idx);
+        if (!ls.length && !gs.length) return null;
+        const rows: ({ l: CartLine } | { g: Gone })[] = ls.map((l) => ({ l }));
+        for (const x of gs) rows.splice(Math.min(x.idx, rows.length), 0, { g: x });
         return (
           <div key={g.type}>
             <h3 className="cg">
-              {g.title} <small>{ls.length}</small>
+              {g.title} {ls.length > 0 && <small>{ls.length}</small>}
             </h3>
-            {ls.map((l) => (
-              <div className="li" key={l.key}>
-                <div className="t">
-                  {l.title}
-                  {l.subtitle && <small>{l.subtitle}</small>}
+            {rows.map((r) => {
+              if ("g" in r) return <GoneRow key={r.g.key} g={r.g} onRestore={() => restore(r.g)} onDone={() => forget(r.g)} />;
+              const l = r.l;
+              return (
+                <div className="li" key={l.key}>
+                  <div className="t">
+                    {l.title}
+                    {l.subtitle && <small>{l.subtitle}</small>}
+                  </div>
+                  <div className="p num">{l.price ? money(l.price) : ""}</div>
+                  <div className="ctl">
+                    {l.type === "extra" && (isPerUnit(extraById[l.id]?.unit) || l.qty > 1) && (
+                      <>
+                        <button className="qbtn" type="button" aria-label="Меньше" onClick={() => (l.qty > 1 ? setExtra(l.id, l.qty - 1) : remove(l))}>
+                          −
+                        </button>
+                        <b className="num">{l.qty}</b>
+                        <button className="qbtn" type="button" aria-label="Больше" onClick={() => setExtra(l.id, l.qty + 1)}>
+                          +
+                        </button>
+                      </>
+                    )}
+                    <button className="rm" type="button" onClick={() => remove(l)} data-track={`cart_remove_${l.id}`}>
+                      Убрать
+                    </button>
+                  </div>
                 </div>
-                <div className="p num">{l.price ? money(l.price) : ""}</div>
-                <div className="ctl">
-                  {l.type === "extra" && (isPerUnit(extraById[l.id]?.unit) || l.qty > 1) && (
-                    <>
-                      <button className="qbtn" type="button" aria-label="Меньше" onClick={() => setExtra(l.id, l.qty - 1)}>
-                        −
-                      </button>
-                      <b className="num">{l.qty}</b>
-                      <button className="qbtn" type="button" aria-label="Больше" onClick={() => setExtra(l.id, l.qty + 1)}>
-                        +
-                      </button>
-                    </>
-                  )}
-                  <button className="rm" type="button" onClick={() => remove(l)} data-track={`cart_remove_${l.id}`}>
-                    Убрать
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         );
       })}
@@ -76,27 +121,29 @@ export function CartView() {
   const hpRef = useRef<HTMLInputElement>(null);
   const [barVisible, setBarVisible] = useState(false);
   const [typing, setTyping] = useState(false);
-  // «Убрали: … · Вернуть» — 5 секунд (решение владельца 03.11: на телефоне легко промахнуться по «Убрать»).
-  const [undo, setUndo] = useState<{ l: CartLine; choices?: Record<number, string>; at: number } | null>(null);
-  useEffect(() => {
-    if (!undo) return;
-    const t = setTimeout(() => setUndo(null), 5000);
-    return () => clearTimeout(t);
-  }, [undo]);
+  // «Убрали: … · Вернуть» — на месте позиции (владелец 03.11: плашку внизу не замечали; на телефоне легко промахнуться по «Убрать»).
+  const [gone, setGone] = useState<Gone[]>([]);
+  const goneSeq = useRef(0);
   const remove = (l: CartLine) => {
     // Выбор вариантов пакета запоминаем, чтобы вернуть пакет таким же.
     const choices = l.type === "package" ? state.packages.find((p) => p.id === l.id)?.choices : undefined;
+    const idx = lines.filter((x) => x.type === l.type).findIndex((x) => x.key === l.key);
     removeLine(l);
-    setUndo({ l, choices, at: Date.now() });
+    setGone((gs) => [...gs, { l, choices, idx, key: `${l.key}~${++goneSeq.current}`, until: Date.now() + GONE_MS }]);
   };
-  const restore = () => {
-    if (!undo) return;
-    const { l, choices } = undo;
-    if (l.type === "program") cart.toggleProgram(l.id);
+  const forget = (g: Gone) => setGone((gs) => gs.filter((x) => x.key !== g.key));
+  const restore = (g: Gone) => {
+    const { l, choices } = g;
+    // toggle* переключают: если позиция уже снова в заявке (например, из другой вкладки), не трогаем.
+    if (l.type === "program") {
+      if (!state.programs.includes(l.id)) cart.toggleProgram(l.id);
+    }
     else if (l.type === "extra") cart.setExtra(l.id, l.qty);
     else if (l.type === "package") cart.addPackage(l.id, choices);
-    else if (l.type === "costume") cart.toggleCostume(l.id);
-    setUndo(null);
+    else if (l.type === "costume") {
+      if (!state.costumes.includes(l.id)) cart.toggleCostume(l.id);
+    }
+    forget(g);
   };
 
   const custom = lines.some((l) => l.type === "package" && l.price === 0);
@@ -135,6 +182,7 @@ export function CartView() {
       track("lead_ok", { id: j.id });
       flushNow();
       setResult({ ok: true, id: j.id, text, total });
+      setGone([]);
       // Экран успеха рисуется из result, поэтому корзину можно чистить сразу.
       clear();
     } catch {
@@ -144,9 +192,13 @@ export function CartView() {
     } finally {
       clearTimeout(timer);
       setSending(false);
-      window.scrollTo({ top: 0 });
     }
   }
+
+  // Экран «Отправлена» / «Не получилось» — сразу с верха, без плавной прокрутки (её глобальная плавность уводила вниз).
+  useEffect(() => {
+    if (result) window.scrollTo({ top: 0, behavior: "instant" });
+  }, [result]);
 
   // Липкая «Отправить заявку» на телефоне: видна, пока главная кнопка в итоге ниже экрана
   // (на ноутбуке итог липкий справа и всегда на виду — панель не появляется).
@@ -170,7 +222,11 @@ export function CartView() {
   // иначе после первой заявки вторую не собрать (баг с боевого сайта 02.11).
   if (showResult) body = <LeadResult r={result} onBack={() => setResult(null)} />;
   else if (!ready) body = <div className="h-[60vh]" aria-busy="true" aria-label="Загружаем заявку" />;
-  else if (count === 0) body = <EmptyCart />;
+  else if (count === 0)
+    body = (
+      // Убрали последнюю позицию — «Вернуть» ещё видно в пустой заявке.
+      <EmptyCart>{gone.length > 0 && <Lines remove={remove} gone={gone} restore={restore} forget={forget} />}</EmptyCart>
+    );
   else
     body = (
       <>
@@ -191,7 +247,7 @@ export function CartView() {
                 <small>После заявки покажем героев и образы, вы выберете своё.</small>
               </div>
             </div>
-            <Lines remove={remove} />
+            <Lines remove={remove} gone={gone} restore={restore} forget={forget} />
             <CartOptions />
             <form
               id="lead-form"
@@ -254,19 +310,7 @@ export function CartView() {
       <div className="wrap" style={{ maxWidth: showResult || count === 0 ? 600 : undefined }}>
         {body}
       </div>
-      {undo && !showResult && (
-        <div className="bar bar--undo" key={undo.at} role="status">
-          <div className="undo">
-            <span>
-              Убрали: <b>{undo.l.title}</b>
-            </span>
-            <button type="button" onClick={restore} data-track="cart_undo">
-              Вернуть
-            </button>
-          </div>
-        </div>
-      )}
-      {hasItems && barVisible && !typing && !undo && (
+      {hasItems && barVisible && !typing && (
         <div className="bar">
           {/* Без телефона submit() сам прокрутит к полю и подсветит его. */}
           <button type="button" className="barBtn barBtn--send" disabled={sending} onClick={() => void submit()} data-track="lead_submit_bar">

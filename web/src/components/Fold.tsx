@@ -37,6 +37,24 @@ function animateHeight(el: HTMLElement, from: number, to: number, done?: () => v
   window.setTimeout(finish, MS + 60);
 }
 
+/** Плавно схлопывает элемент в ноль (высота, отступы, прозрачность), затем `done` — убрать его из списка. */
+export function collapseAway(el: HTMLElement, done: () => void) {
+  if (reduced()) return done();
+  const cs = getComputedStyle(el);
+  const from = { height: `${el.offsetHeight}px`, opacity: 1, paddingTop: cs.paddingTop, paddingBottom: cs.paddingBottom, marginTop: cs.marginTop, marginBottom: cs.marginBottom };
+  const to = { height: "0px", opacity: 0, paddingTop: "0px", paddingBottom: "0px", marginTop: "0px", marginBottom: "0px" };
+  el.style.overflow = "hidden";
+  const a = el.animate([from, to], { duration: MS, easing: EASE, fill: "forwards" });
+  let called = false;
+  const finish = () => {
+    if (called) return;
+    called = true;
+    done();
+  };
+  a.onfinish = finish;
+  window.setTimeout(finish, MS + 60);
+}
+
 /**
  * Для блоков, которые раскрываются состоянием React: `mark()` — перед setState, высота анимируется сама.
  * `dep` — то, что меняется при раскрытии (обычно флаг open).
