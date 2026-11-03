@@ -47,7 +47,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    // data-scroll-behavior: на переходах Next выключает плавную прокрутку — иначе новая страница открывалась внизу (Next 16, раунд 26).
+    // data-scroll-behavior: на переходах Next выключает плавную прокрутку — иначе новая страница открывалась внизу (Next 16, раунд 29).
     <html lang="ru" data-scroll-behavior="smooth" className={`${raleway.variable} ${nauryz.variable}`}>
       <body className="flex min-h-dvh flex-col">
         {children}
