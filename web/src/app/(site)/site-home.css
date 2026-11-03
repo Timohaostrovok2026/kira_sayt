@@ -248,6 +248,8 @@
 .band:nth-child(5) { background: #fff; color: var(--ink-deep); transform: rotate(-1.5deg); }
 .band:hover { transform: rotate(0) translateY(-4px); }
 .foot-meta { text-align: center; color: rgba(255, 255, 255, 0.7); font-size: 14.5px; display: grid; gap: 6px; justify-items: center; padding-bottom: 70px; }
+/* запас снизу — под нижнее меню и полосу «Заявка» телефона; на ноутбуке их нет, пустоту убираем */
+@media (min-width: 900px) { .foot { padding-bottom: 88px; } .foot-meta { padding-bottom: 0; } }
 .copy { background: none; border: 2px solid rgba(255, 255, 255, 0.4); border-radius: 999px; min-height: 36px; padding: 0 16px; font-weight: 700; font-size: 13px; color: #fff; }
 .copy:hover { background: #fff; color: var(--ink); }
 .foot-links { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 16px; margin-bottom: 4px; }

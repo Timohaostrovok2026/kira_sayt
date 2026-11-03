@@ -63,7 +63,7 @@ async function ProgramView({ params }: Props) {
   const animExtras = p.kind === "Анимация" ? ANIMATION_EXTRAS.map((x) => extraById[x]).filter(Boolean) : [];
 
   return (
-    <section className="sec sec--cream">
+    <section className="sec sec--cream sec--top">
       <div className="wrap">
         <Link className="back" href="/sobrat?step=2">
           ← Все программы

@@ -162,6 +162,8 @@
 .sec { padding-block: clamp(48px, 7vw, 96px); }
 .sec--blush { background: linear-gradient(180deg, var(--blush), var(--peach)); }
 .sec--cream { background: var(--cream); }
+/* первый раздел внутренней страницы на ноутбуке — сразу под шапкой, без отступа как между разделами главной (владелец, 03.11; на телефоне так и было хорошо) */
+@media (min-width: 900px) { .sec--top { padding-top: 36px; } }
 .dark { background: var(--crimson); color: #fff; }
 .sec-head { display: grid; gap: 10px; margin-bottom: clamp(24px, 4vw, 40px); max-width: 60ch; }
 .sec-head h2 { color: var(--rasp-700); }

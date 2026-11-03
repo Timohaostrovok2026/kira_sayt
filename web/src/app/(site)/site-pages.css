@@ -6,7 +6,8 @@
   margin: -8px -16px 18px; padding: 10px 16px 8px; background: rgba(255, 228, 240, 0.94); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border-bottom: 1px solid rgba(126, 15, 69, 0.1);
 }
-@media (min-width: 760px) { .wz { max-width: 720px; margin: -8px auto 22px; border-radius: 0 0 22px 22px; } }
+/* на ноутбуке — во всю ширину контента, шаги по центру: узкая полоса не закрывала заголовок шага, он торчал по бокам (03.11) */
+@media (min-width: 760px) { .wz { margin: -8px 0 22px; padding-inline: max(16px, calc((100% - 720px) / 2)); border-radius: 0 0 22px 22px; } }
 .wzs { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; padding: 0; color: var(--text-soft); font-weight: 700; font-size: 11px; position: relative; }
 .wzs i { font-style: normal; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: #fff; border: 2px solid rgba(126, 15, 69, 0.25); font-weight: 800; font-size: 13px; color: var(--rasp-700); z-index: 1; }
 .wzs:disabled { cursor: default; }
