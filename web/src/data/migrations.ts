@@ -98,4 +98,21 @@ const kirillAnswers1103: Migration = {
   },
 };
 
-export const MIGRATIONS: Migration[] = [kirillV11, kirillAnswers1103];
+/** Ответы Кирилла 03.11 вечером (раунд 30): фотограф и выезд за МКАД — как в презентациях, возраст новогодних программ. */
+const kirillAnswers1103b: Migration = {
+  id: "2026-11-03-kirill-answers-2",
+  apply(c) {
+    let extras: Extra[] = c.extras;
+    const price: Record<string, number> = { e_photo1: 9000, e_photo15: 13000, e_photo2: 17000 };
+    for (const [id, v] of Object.entries(price)) extras = patch(extras, id, (e) => ({ ...e, price: v }));
+    // «5 и старше», «1 и старше» — без верхней границы.
+    let programs: Program[] = c.programs;
+    const from: Record<string, number> = { p_grinch1: 5, p_yaga: 5, p_letter: 1 };
+    for (const [id, a] of Object.entries(from)) programs = patch(programs, id, (p) => ({ ...p, a, b: null }));
+    // Цена выезда в вопросах — только сами числа: остальной текст ответа мог править Кирилл.
+    const faq = c.site.faq.map((f) => (f.a.includes("1 500 ₽ плюс 100 ₽") ? { ...f, a: f.a.replace("1 500 ₽ плюс 100 ₽", "2 000 ₽ плюс 150 ₽") } : f));
+    return { programs, extras, site: { ...c.site, faq } };
+  },
+};
+
+export const MIGRATIONS: Migration[] = [kirillV11, kirillAnswers1103, kirillAnswers1103b];

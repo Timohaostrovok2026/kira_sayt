@@ -50,13 +50,13 @@ test("доп умножается на количество, 0 и меньше �
   assert.deepEqual(ls.map((l) => [l.id, l.qty, l.price]), [["cryo", 2, 33800]]);
 });
 
-test("выезд за МКАД: 1 500 + 100 ₽/км; отрицательные и пустые км — 0", () => {
+test("выезд за МКАД: 2 000 + 150 ₽/км; отрицательные и пустые км — 0", () => {
   const mkad = (km: number) => buildLines(cart({ form: form({ outsideMkad: true, km }) }), cat)[0];
-  assert.equal(mkad(0).price, 1500);
-  assert.equal(mkad(12).price, 2700);
-  assert.equal(mkad(-5).price, 1500);
+  assert.equal(mkad(0).price, 2000);
+  assert.equal(mkad(12).price, 3800);
+  assert.equal(mkad(-5).price, 2000);
   assert.equal(mkad(-5).subtitle, "0 км от МКАД");
-  assert.equal(mkad(NaN).price, 1500);
+  assert.equal(mkad(NaN).price, 2000);
   assert.equal(buildLines(cart({ form: form({ outsideMkad: false, km: 30 }) }), cat).length, 0, "галочка снята — км не считаются");
 });
 
@@ -91,7 +91,7 @@ test("герой — без цены (ЦЕН-4); итог всей корзин�
     cat,
   );
   assert.equal(ls.find((l) => l.type === "costume")!.price, 0);
-  // 10 000 + 22 900 (пакет) + 0 + 16 800 + 0 + 2 500 + 4 500
-  assert.equal(linesTotal(ls), 56700);
+  // 10 000 + 22 900 (пакет) + 0 + 16 800 + 0 + 3 500 (МКАД 2 000 + 10 × 150) + 4 500
+  assert.equal(linesTotal(ls), 57700);
   assert.equal(linesCount(ls), 5);
 });

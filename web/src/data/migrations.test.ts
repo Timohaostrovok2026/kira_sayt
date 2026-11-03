@@ -78,3 +78,22 @@ test("03.11: текст «Счастья» и «100+ костюмов», ост�
   assert.equal(out.extras, undefined);
   assert.equal(out.site, undefined);
 });
+
+const answers2 = MIGRATIONS.find((m) => m.id === "2026-11-03-kirill-answers-2")!;
+
+test("03.11 вечер: фотограф, возраст «от», числа выезда в вопросе — и больше ничего", () => {
+  const snap = snapshot();
+  snap.programs.push(prog("p_grinch1", { a: 5, b: 16 }), prog("p_letter", { a: 1, b: 10 }));
+  snap.extras.push(ex("e_photo1", { price: 8900 }), ex("e_photo2", { price: 17500 }), ex("e_reels1", { price: 7900 }));
+  // Ответ с правкой Кирилла: меняются только числа.
+  snap.site.faq = [{ q: "Сколько стоит выезд за МКАД?", a: "Выезд за МКАД стоит 1 500 ₽ плюс 100 ₽ за каждый километр. Своя правка." }, { q: "Другое", a: "1 500 ₽" }];
+  const out = answers2.apply(snap);
+  const pr = (id: string) => out.programs!.find((p) => p.id === id)!;
+  const xp = (id: string) => out.extras!.find((e) => e.id === id)!.price;
+  assert.deepEqual([pr("p_grinch1").a, pr("p_grinch1").b, pr("p_letter").a, pr("p_letter").b], [5, null, 1, null]);
+  assert.deepEqual([pr("p_anim").a, pr("p_anim").b], [1, 8], "чужие возрасты не трогаем");
+  assert.deepEqual([xp("e_photo1"), xp("e_photo2"), xp("e_reels1"), xp("e_ice")], [9000, 17000, 7900, 17900]);
+  assert.equal(out.site!.faq[0].a, "Выезд за МКАД стоит 2 000 ₽ плюс 150 ₽ за каждый километр. Своя правка.");
+  assert.equal(out.site!.faq[1].a, "1 500 ₽");
+  assert.equal(out.packages, undefined);
+});

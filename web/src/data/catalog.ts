@@ -100,8 +100,9 @@ export interface CatalogData {
  * VIP-костюм менеджер предлагает сам (по просьбе Кирилла не выделяем на сайте).
  */
 export const SPECIAL_EXTRAS = new Set(["e_mkad", "e_sound", "e_vip"]);
-export const MKAD_BASE = 1500;
-export const MKAD_PER_KM = 100;
+// Выезд за МКАД — как в презентациях Кирилла (раунд 30, 03.11; было 1 500 + 100).
+export const MKAD_BASE = 2000;
+export const MKAD_PER_KM = 150;
 export const SOUND_PRICE = 4500;
 
 export const AGE_GROUPS = [
