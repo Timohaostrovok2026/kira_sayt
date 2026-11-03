@@ -105,10 +105,36 @@ export function ProgramCard({ p }: { p: Program }) {
   );
 }
 
-/** Шоу, мастер-класс или доп: каждое нажатие «Добавить» — ещё одна штука, как в черновике. */
-export function ExtraCard({ e }: { e: Extra }) {
+/**
+ * «Добавить», а когда уже в заявке — «− N +» (владелец 03.11: «Ещё +1» и «В заявке: N» непонятны).
+ * «−» на последней штуке убирает позицию — снова «Добавить».
+ */
+export function QtyControl({ id, track, ghost }: { id: string; track: string; ghost?: boolean }) {
   const { state, setExtra } = useCart();
-  const qty = state.extras[e.id] ?? 0;
+  const qty = state.extras[id] ?? 0;
+  if (!qty)
+    return (
+      <button className={`pill ${ghost ? "pill--ghost" : "pill--hot"} pill--sm`} type="button" onClick={() => setExtra(id, 1)} data-track={track}>
+        Добавить
+      </button>
+    );
+  return (
+    <div className="qty" role="group" aria-label="Сколько в заявке">
+      <button type="button" aria-label="Меньше" onClick={() => setExtra(id, qty - 1)}>
+        −
+      </button>
+      <b className="num" aria-live="polite">
+        {qty}
+      </b>
+      <button type="button" aria-label="Больше" onClick={() => setExtra(id, qty + 1)} data-track={track}>
+        +
+      </button>
+    </div>
+  );
+}
+
+/** Шоу, мастер-класс или доп: «Добавить», затем «− N +». */
+export function ExtraCard({ e }: { e: Extra }) {
   const { intro, steps } = splitHow(e.how);
   const inc = lines(e.inc || steps.join("\n"));
   const age = e.a != null || e.b != null ? ageText(e) : "";
@@ -138,9 +164,7 @@ export function ExtraCard({ e }: { e: Extra }) {
           {money(e.price)}
           {e.unit && <small>{e.unit}</small>}
         </div>
-        <button className="pill pill--hot pill--sm" type="button" onClick={() => setExtra(e.id, qty + 1)} data-track={`extra_add_${e.id}`}>
-          {qty ? `В заявке: ${qty}` : "Добавить"}
-        </button>
+        <QtyControl id={e.id} track={`extra_add_${e.id}`} />
       </div>
     </article>
   );

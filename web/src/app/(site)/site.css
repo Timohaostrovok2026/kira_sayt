@@ -86,6 +86,11 @@
 .pill--dark { background: var(--ink-deep); color: #fff; border-color: var(--ink-deep); }
 .pill--sm { min-height: 40px; padding: 0 18px; font-size: 12px; }
 .pill--big { min-height: 64px; padding-inline: clamp(26px, 6vw, 44px); font-size: 15px; }
+/* «− N +» вместо «Добавить», когда позиция уже в заявке; по размеру как .pill--sm */
+.qty { display: inline-flex; align-items: center; height: 40px; border: 2px solid var(--rasp-700); border-radius: 999px; color: var(--rasp-700); background: #fff; flex: none; }
+.qty button { width: 40px; height: 36px; border: 0; background: none; color: inherit; font: 800 20px/1 var(--body); cursor: pointer; border-radius: 999px; }
+.qty button:hover { background: rgba(126, 15, 69, 0.08); }
+.qty b { min-width: 26px; text-align: center; font-family: var(--display); font-weight: 400; font-size: 18px; }
 .pill--big2 { min-height: 54px; font-size: 15px; }
 .pill[disabled] { opacity: 0.5; pointer-events: none; }
 .pulse { animation: pulse 2.2s ease-in-out infinite; }

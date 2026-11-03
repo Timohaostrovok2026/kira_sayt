@@ -1,6 +1,7 @@
 "use client";
 
 import { useCart } from "@/lib/cart";
+import { QtyControl } from "@/components/cards";
 
 /** «Добавить в заявку» / «Убрать из заявки» в цветной шапке программы. */
 export function ProgramToggle({ id }: { id: string }) {
@@ -13,13 +14,7 @@ export function ProgramToggle({ id }: { id: string }) {
   );
 }
 
-/** «Добавить» / «Ещё +1» для допа или шоу в правой колонке. */
+/** «Добавить», затем «− N +» для допа или шоу в правой колонке. */
 export function AddExtraButton({ id }: { id: string }) {
-  const { state, setExtra } = useCart();
-  const qty = state.extras[id] ?? 0;
-  return (
-    <button className="pill pill--ghost pill--sm" type="button" onClick={() => setExtra(id, qty + 1)} data-track={`program_page_extra_${id}`}>
-      {qty ? "Ещё +1" : "Добавить"}
-    </button>
-  );
+  return <QtyControl id={id} track={`program_page_extra_${id}`} ghost />;
 }
