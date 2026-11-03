@@ -1,10 +1,19 @@
 // Строки корзины и итог — чистые функции без React (тесты — cart-lines.test.ts). Состояние и хуки — в lib/cart.tsx.
-import { MKAD_BASE, MKAD_PER_KM, SOUND_PRICE, slotRef, type Catalog } from "./catalog.ts";
+import { LETTER, MKAD_BASE, MKAD_PER_KM, OUTDOOR_PRICE, SOUND_PRICE, slotRef, type Catalog } from "./catalog.ts";
+import { priceFor, type PriceWindow } from "./date-prices.ts";
+import { plural } from "../lib/format.ts";
 
 export interface CartPackage {
   id: string;
   /** Индекс слота пакета → выбранная позиция (для слотов с альтернативами). */
   choices: Record<number, string>;
+}
+
+/** Выбор у новогодней программы с ценами по датам: столбец таблицы, окно времени 31.12, число писем. */
+export interface ProgramOpts {
+  col?: string;
+  slot?: string;
+  qty?: number;
 }
 
 export interface CartForm {
@@ -19,6 +28,8 @@ export interface CartForm {
   sound: boolean;
   /** Звук уже включили сами за бумажное шоу — второй раз не включаем, даже если клиент выключил. */
   soundAuto: boolean;
+  /** Праздник на улице зимой — доплата за новогодние программы (OUTDOOR_PRICE). */
+  outdoor: boolean;
 }
 
 export interface CartState {
@@ -26,27 +37,80 @@ export interface CartState {
   extras: Record<string, number>;
   packages: CartPackage[];
   costumes: string[];
+  programOpts: Record<string, ProgramOpts>;
   form: CartForm;
+}
+
+/** Для строки программы с таблицей: что показать в корзине (выбор варианта, окна, письма). */
+export interface DatedInfo {
+  cols: string[];
+  /** Выбранный столбец и тот, по которому посчитано (на дату выбранного может не быть). */
+  want: number;
+  col: number;
+  off: number[];
+  windows: PriceWindow[];
+  slot?: string;
+  /** Цена каждого окна по посчитанному столбцу — подписи в списке «Время приезда». */
+  windowPrices: (number | null)[];
+  nightOnly?: boolean;
+  /** Число писем — только у Волшебного письма. */
+  letters?: number;
 }
 
 export interface CartLine {
   key: string;
-  type: "program" | "extra" | "package" | "costume" | "mkad" | "sound";
+  type: "program" | "extra" | "package" | "costume" | "mkad" | "sound" | "outdoor";
   id: string;
   title: string;
   subtitle?: string;
   qty: number;
   price: number;
   fullPrice?: number;
+  /** Цена не точная: «от» (нет даты или времени) или «укажет менеджер» (price = 0). Нет поля — точная. */
+  mode?: "from" | "manager";
+  /** Пояснение к цене: «Цена зависит от даты», «На эту дату — только Премиум». */
+  note?: string;
+  dated?: DatedInfo;
+}
+
+/** Число писем: целое от 1 до LETTER.max, по умолчанию 1 (ответ 17: «сколько детей»). */
+export function letterCount(q: unknown) {
+  return typeof q === "number" && Number.isInteger(q) ? Math.min(LETTER.max, Math.max(1, q)) : 1;
 }
 
 /** Строки корзины. Позиции, которых больше нет на сайте (удалены или скрыты), пропускаем. */
 export function buildLines(s: CartState, cat: Catalog): CartLine[] {
-  const { programById, packageById, extraById, costumeById, anyItem, packagePrice } = cat;
+  const { programById, packageById, extraById, costumeById, anyItem, packagePrice, tableById } = cat;
   const out: CartLine[] = [];
   for (const id of s.programs) {
     const p = programById[id];
-    if (p) out.push({ key: `p:${id}`, type: "program", id, title: p.name, subtitle: p.kind, qty: 1, price: p.price });
+    if (!p) continue;
+    const line: CartLine = { key: `p:${id}`, type: "program", id, title: p.name, subtitle: p.kind, qty: 1, price: p.price };
+    if (id in tableById) {
+      const t = tableById[id];
+      const o = s.programOpts?.[id] ?? {};
+      if (!t) Object.assign(line, { price: 0, mode: "manager", note: "Цену укажет менеджер" });
+      else {
+        const col = typeof o.col === "string" ? o.col : undefined;
+        const r = priceFor(t, { col, date: s.form.date, slot: typeof o.slot === "string" ? o.slot : undefined });
+        const windowPrices = r.windows.map((w) => {
+          const x = priceFor(t, { col, date: s.form.date, slot: w.label });
+          return x.mode === "exact" ? x.price : null;
+        });
+        const letters = id === LETTER.id ? letterCount(o.qty) : undefined;
+        let price = r.price;
+        if (letters && r.mode !== "manager") price += Math.max(0, letters - LETTER.included) * LETTER.add;
+        const parts = [t.cols.length > 1 ? t.cols[r.col] : "", r.slot ?? "", letters ? `${letters} ${plural(letters, "письмо", "письма", "писем")}` : ""];
+        Object.assign(line, {
+          price,
+          subtitle: parts.filter(Boolean).join(" · ") || p.kind,
+          mode: r.mode === "exact" ? undefined : r.mode,
+          note: r.note,
+          dated: { cols: t.cols, want: Math.max(0, t.cols.indexOf(col ?? "")), col: r.col, off: r.off, windows: r.windows, windowPrices, slot: r.slot, nightOnly: r.nightOnly, letters },
+        });
+      }
+    }
+    out.push(line);
   }
   for (const k of s.packages) {
     const pk = packageById[k.id];
@@ -85,6 +149,19 @@ export function buildLines(s: CartState, cat: Catalog): CartLine[] {
       price: MKAD_BASE + MKAD_PER_KM * km,
     });
   }
+  if (s.form.outdoor) {
+    const ids = s.programs.filter((id) => programById[id] && OUTDOOR_PRICE[id]);
+    if (ids.length)
+      out.push({
+        key: "outdoor",
+        type: "outdoor",
+        id: "outdoor",
+        title: "Праздник на улице",
+        subtitle: ids.map((id) => programById[id].name).join(", "),
+        qty: 1,
+        price: ids.reduce((sum, id) => sum + OUTDOOR_PRICE[id], 0),
+      });
+  }
   if (s.form.sound)
     out.push({ key: "sound", type: "sound", id: "e_sound", title: "Усиленный звук", subtitle: "JBL PartyBox 110 и 2 микрофона", qty: 1, price: SOUND_PRICE });
   return out;
@@ -95,7 +172,13 @@ export function linesTotal(lines: readonly CartLine[]) {
   return lines.reduce((s, l) => s + l.price, 0);
 }
 
-/** Позиций в корзине — без выезда и звука. Считаем по строкам: скрытые и удалённые не в счёт. */
+/** Позиций в корзине — без выезда, звука и улицы. Считаем по строкам: скрытые и удалённые не в счёт. */
 export function linesCount(lines: readonly CartLine[]) {
-  return lines.filter((l) => l.type !== "mkad" && l.type !== "sound").length;
+  return lines.filter((l) => l.type !== "mkad" && l.type !== "sound" && l.type !== "outdoor").length;
 }
+
+/** Итог не точный: есть цены «от» (from) или строки, цену которых назовёт менеджер (manager). */
+export function linesApprox(lines: readonly CartLine[]) {
+  return { from: lines.some((l) => l.mode === "from"), manager: lines.some((l) => l.mode === "manager") };
+}
+

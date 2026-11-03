@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { ANIMATION_EXTRAS, KIND_CLASS, MKAD_BASE, MKAD_PER_KM, SOUND_PRICE, SPECIAL_EXTRAS, type Program, ageText, lines, showFitsProgram, splitHow } from "@/data/catalog";
+import { ANIMATION_EXTRAS, KIND_CLASS, MKAD_BASE, MKAD_PER_KM, SOUND_PRICE, SPECIAL_EXTRAS, type Program, ageText, lines, programFrom, showFitsProgram, splitHow } from "@/data/catalog";
+import { DatePriceTable } from "@/components/DatePriceTable";
 import { getCatalog } from "@/lib/content/get";
 import { money } from "@/lib/format";
 import { AddExtraButton, ProgramToggle } from "./ProgramActions";
@@ -50,7 +51,7 @@ export default function ProgramPage({ params }: Props) {
 /** Страница программы по черновику Кирилла v11: цветная шапка, «Как проходит», «Что входит», допы и шоу сбоку. */
 async function ProgramView({ params }: Props) {
   const { id } = await params;
-  const { programById, extras, extraById } = await getCatalog();
+  const { programById, extras, extraById, tableById } = await getCatalog();
   const p = programById[id] as Program | undefined;
   if (!p) notFound();
 
@@ -62,6 +63,8 @@ async function ProgramView({ params }: Props) {
     .sort((x, y) => x.price - y.price)
     .slice(0, 5);
   const animExtras = p.kind === "Анимация" ? ANIMATION_EXTRAS.map((x) => extraById[x]).filter(Boolean) : [];
+  const cost = programFrom(p, tableById);
+  const table = tableById[p.id];
 
   return (
     <section className="sec sec--cream sec--top">
@@ -79,8 +82,8 @@ async function ProgramView({ params }: Props) {
           <h1 className="display h-lg">{p.name}</h1>
           <div className="dbuy">
             <div className="cost num">
-              {money(p.price)}
-              <small>за программу</small>
+              {cost.from ? `от ${money(cost.price)}` : money(cost.price)}
+              <small>{cost.from ? "цена зависит от даты — смотрите таблицу" : "за программу"}</small>
             </div>
             <ProgramToggle id={p.id} />
           </div>
@@ -88,6 +91,7 @@ async function ProgramView({ params }: Props) {
         <div className="dgrid">
           <div>
             {intro && <p className="dlead">{intro}</p>}
+            {table && <DatePriceTable t={table} />}
             {steps.length > 0 && (
               <>
                 <h2 style={{ marginTop: 30 }}>Как проходит</h2>

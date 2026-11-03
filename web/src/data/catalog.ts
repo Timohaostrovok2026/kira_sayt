@@ -3,6 +3,7 @@
  * Сами данные живут в базе (см. src/lib/content), catalog.json — только начальное наполнение.
  * На сервере каталог берём через getCatalog(), в клиентских компонентах — useCatalog().
  */
+import { parseDatePrices, tableMin, type PriceTable } from "./date-prices.ts";
 
 export type Kind =
   | "Анимация"
@@ -36,6 +37,8 @@ export interface Program {
   cover?: string;
   /** Своё загруженное фото (/media/...). */
   photo?: string;
+  /** Цены по датам (новогодние программы) — текст-таблица, разбор в date-prices.ts. Есть — price = минимум таблицы. */
+  datePrices?: string;
   hidden?: boolean;
 }
 
@@ -104,6 +107,16 @@ export const SPECIAL_EXTRAS = new Set(["e_mkad", "e_sound", "e_vip"]);
 export const MKAD_BASE = 2000;
 export const MKAD_PER_KM = 150;
 export const SOUND_PRICE = 4500;
+
+/** Волшебное письмо (ответы Кирилла 6 и 17): до 2 писем — цена по дате, каждое следующее +2 000 ₽. Письмо — один ребёнок. */
+export const LETTER = { id: "p_letter", included: 2, add: 2000, max: 30 };
+
+/**
+ * «Праздник на улице» зимой (раунд 33): +2 000 ₽ за каждый начатый час на каждого артиста, только новогодние программы.
+ * Дед Мороз и Снегурочка (2 артиста, 30 мин или 1 час) — 4 000, Гринч и Баба Яга (1 артист, 1 час) — 2 000,
+ * спектакль (3 артиста, 90 мин → 2 часа) — 12 000. Волшебное письмо — только в помещении.
+ */
+export const OUTDOOR_PRICE: Record<string, number> = { p_ded: 4000, p_grinch1: 2000, p_yaga: 2000, p_grinch2: 12000 };
 
 export const AGE_GROUPS = [
   { id: "1-3", label: "1–3 года", a: 1, b: 3 },
@@ -230,6 +243,12 @@ export function lines(s?: string) {
   return (s ?? "").split("\n").filter(Boolean);
 }
 
+/** Цена программы для карточки: у таблицы по датам — наименьшая из таблицы («от»). */
+export function programFrom(p: Program, tables: Record<string, PriceTable | null>) {
+  const t = tables[p.id];
+  return { price: t ? tableMin(t) : p.price, from: p.id in tables };
+}
+
 export function minPrice(list: { price: number }[]) {
   return list.length ? Math.min(...list.map((x) => x.price)) : 0;
 }
@@ -263,6 +282,8 @@ export interface Catalog extends CatalogData {
   /** Все позиции, включая скрытые (для состава пакетов и обложек). */
   all: CatalogData;
   programById: Record<string, Program>;
+  /** Разобранные таблицы цен по датам. Ключ есть — у программы таблица; null — текст не разобрался (цену укажет менеджер). */
+  tableById: Record<string, PriceTable | null>;
   extraById: Record<string, Extra>;
   packageById: Record<string, Package>;
   costumeById: Record<string, Costume>;
@@ -294,6 +315,8 @@ export function buildCatalog(data: CatalogData): Catalog {
     return costumeImg(cover);
   };
   const anyItem = (id: string): AnyItem | undefined => allExtras[id] ?? allPrograms[id];
+  const tableById: Record<string, PriceTable | null> = {};
+  for (const p of data.programs) if (p.datePrices?.trim()) tableById[p.id] = parseDatePrices(p.datePrices).table;
 
   return {
     all: data,
@@ -303,6 +326,7 @@ export function buildCatalog(data: CatalogData): Catalog {
     costumes,
     costumeCats: data.costumeCats,
     programById: byId(programs),
+    tableById,
     extraById: byId(extras),
     packageById: byId(packages),
     costumeById: byId(costumes),

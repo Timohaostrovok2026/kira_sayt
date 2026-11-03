@@ -62,6 +62,13 @@ function lineText(l: CartLine, cat: Catalog) {
     if (pk?.custom) return `• ${l.title} — стоимость обсудим`;
     return `• ${l.title}: ${l.subtitle} — ${money(l.price)}`;
   }
+  if (l.dated || l.mode) {
+    // Новогодняя программа: вариант, время приезда и письма — в скобках; дата — ниже, в «Дата:».
+    const what = l.dated && l.subtitle ? ` (${l.subtitle})` : "";
+    if (l.mode === "manager") return `• ${l.title}${what} — цену укажет менеджер`;
+    if (l.mode === "from") return `• ${l.title}${what} — от ${money(l.price)}, цена зависит от даты`;
+    return `• ${l.title}${what} — ${money(l.price)}`;
+  }
   if (l.type === "extra") {
     // «Добавить» у любого допа прибавляет ещё штуку (v11) — количество показываем всегда, иначе цена двойная без пояснения.
     const q = l.qty > 1 ? ` × ${l.qty}` : "";
@@ -86,11 +93,15 @@ export function buildLeadText(s: CartState, lines: CartLine[], total: number, ca
 
   const mkad = by("mkad")[0];
   const sound = by("sound")[0];
-  if (mkad || sound) out.push("");
+  const outdoor = by("outdoor")[0];
+  if (mkad || sound || outdoor) out.push("");
   if (mkad) out.push(`Выезд за МКАД, ${Math.max(0, s.form.km || 0)} км — ${money(mkad.price)}`);
+  if (outdoor) out.push(`Праздник на улице (${outdoor.subtitle}) — ${money(outdoor.price)}`);
   if (sound) out.push(`Усиленный звук — ${money(sound.price)}`);
 
-  out.push("", `Итого ориентировочно: ${money(total)}`);
+  const from = lines.some((l) => l.mode === "from");
+  const manager = lines.some((l) => l.mode === "manager");
+  out.push("", `Итого ориентировочно: ${from ? "от " : ""}${money(total)}${manager ? " (цену части позиций укажет менеджер)" : ""}`);
 
   const f = s.form;
   const info: string[] = [];

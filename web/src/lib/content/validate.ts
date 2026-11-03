@@ -1,5 +1,6 @@
 import "server-only";
 import { EXTRA_GROUPS, KINDS, type CatalogData, type Costume, type Extra, type ExtraGroup, type Kind, type Package, type Program } from "@/data/catalog";
+import { parseDatePrices, tableMin } from "@/data/date-prices";
 import type { SiteContent } from "@/data/site";
 
 /** Ошибка проверки формы — текст показываем Кириллу как есть. */
@@ -95,6 +96,14 @@ export function cleanProgram(v: unknown, id: string, prev?: Program): Program {
   const kind = str(r.kind) as Kind;
   if (!KINDS.some((k) => k.id === kind)) fail("Выберите вид программы");
   const cover = str(r.cover, 40);
+  // Цены по датам: при таблице цена программы — её минимум («от» на карточке). Пустое поле стирает таблицу (...prev её бы оставил).
+  const datePrices = text(r.datePrices, 4000);
+  let cost = price(r.price);
+  if (datePrices) {
+    const { table, errors } = parseDatePrices(datePrices);
+    if (!table) fail(`Цены по датам: ${errors.slice(0, 3).join("; ")}`);
+    else cost = tableMin(table);
+  }
   return {
     ...prev,
     id,
@@ -102,7 +111,8 @@ export function cleanProgram(v: unknown, id: string, prev?: Program): Program {
     kind,
     group: str(r.group, 60) || prev?.group || "Каждый день",
     ...ages(r),
-    price: price(r.price),
+    price: cost,
+    datePrices: datePrices || undefined,
     dur: str(r.dur, 60),
     art: str(r.art, 80),
     how: text(r.how),
@@ -142,14 +152,21 @@ export function cleanExtra(v: unknown, id: string, prev?: Extra): Extra {
 export function cleanPackage(v: unknown, id: string, cat: CatalogData, prev?: Package): Package {
   const r = obj(v);
   const known = new Set([...cat.programs.map((p) => p.id), ...cat.extras.map((e) => e.id)]);
+  // Цена программы с таблицей зависит от даты — скидку пакета от неё не посчитать (Т19).
+  const dated = new Map(cat.programs.filter((p) => p.datePrices?.trim()).map((p) => [p.id, p.name]));
+  const noDated = (ref: string, i: number) => dated.has(ref) && fail(`Позиция ${i + 1}: «${dated.get(ref)}» — цена зависит от даты, в пакет её не добавить`);
   const custom = !!r.custom;
   const items = arr(r.items).map((x, i) => {
     const it = obj(x);
     const ref = str(it.ref, 40);
     if (!known.has(ref)) fail(`Позиция ${i + 1}: выберите программу или доп`);
+    noDated(ref, i);
     const qty = optNumber(it.qty, 1, 99, `Позиция ${i + 1}, количество`) ?? 1;
     const alts = [...new Set(arr(it.alts).map((a) => str(a, 40)))].filter((a) => a && a !== ref);
-    for (const a of alts) if (!known.has(a)) fail(`Позиция ${i + 1}: вариант не найден`);
+    for (const a of alts) {
+      if (!known.has(a)) fail(`Позиция ${i + 1}: вариант не найден`);
+      noDated(a, i);
+    }
     return alts.length ? { ref, qty, alts } : { ref, qty };
   });
   if (!custom && !items.length) fail("Добавьте в пакет хотя бы одну позицию");

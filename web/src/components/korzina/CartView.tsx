@@ -7,6 +7,7 @@ import { money, plural } from "@/lib/format";
 import { flushNow, track, visitorId } from "@/lib/track";
 import { useCatalog, useSite } from "@/lib/catalog-context";
 import { CartOptions } from "./CartOptions";
+import { DatedControls, LinePrice } from "./DatedControls";
 import { EmptyCart } from "./EmptyCart";
 import { LeadForm } from "./LeadForm";
 import { LeadResult, type LeadResultData } from "./LeadResult";
@@ -75,7 +76,10 @@ function Lines({ remove, gone, restore, forget }: { remove: (l: CartLine) => voi
                     {l.title}
                     {l.subtitle && <small>{l.subtitle}</small>}
                   </div>
-                  <div className="p num">{l.price ? money(l.price) : ""}</div>
+                  <div className="p num">
+                    <LinePrice l={l} />
+                  </div>
+                  <DatedControls l={l} />
                   <div className="ctl">
                     {l.type === "extra" && (isPerUnit(extraById[l.id]?.unit) || l.qty > 1) && (
                       <>
@@ -110,7 +114,7 @@ export function CartView() {
   const cart = useCart();
   const cat = useCatalog();
   const { contacts } = useSite();
-  const { state, lines, total, count, ready, clear } = cart;
+  const { state, lines, total, approx, count, ready, clear } = cart;
   const removeLine = useRemoveLine();
 
   const [result, setResult] = useState<LeadResultData | null>(null);
@@ -149,6 +153,7 @@ export function CartView() {
   const custom = lines.some((l) => l.type === "package" && l.price === 0);
   const okPhone = phoneValid(state.form.phone);
   const msgText = buildLeadText(state, lines, total, cat);
+  const from = approx.from ? "от " : "";
 
   async function submit() {
     if (sending) return;
@@ -175,20 +180,20 @@ export function CartView() {
       if (r.status === 429) {
         track("lead_fail", { total, reason: "limit" });
         flushNow();
-        setResult({ ok: false, text, total, limited: true });
+        setResult({ ok: false, text, total, from: approx.from, limited: true });
         return;
       }
       if (!r.ok || !j?.ok || typeof j.id !== "number") throw new Error("lead_failed");
       track("lead_ok", { id: j.id });
       flushNow();
-      setResult({ ok: true, id: j.id, text, total });
+      setResult({ ok: true, id: j.id, text, total, from: approx.from });
       setGone([]);
       // Экран успеха рисуется из result, поэтому корзину можно чистить сразу.
       clear();
     } catch {
       track("lead_fail", { total });
       flushNow();
-      setResult({ ok: false, text, total });
+      setResult({ ok: false, text, total, from: approx.from });
     } finally {
       clearTimeout(timer);
       setSending(false);
@@ -276,9 +281,14 @@ export function CartView() {
               <div className="sum" style={{ borderRadius: 0, display: "block" }}>
                 <span className="block">Ориентировочно</span>
                 <b className="num block" aria-live="polite" style={{ color: "var(--lime)", marginTop: 4, fontSize: 40, lineHeight: 1 }}>
+                  {from}
                   {money(total)}
                 </b>
-                <small style={{ marginTop: 8 }}>{custom ? "«Индивидуальный» посчитаем отдельно. " : ""}Точную стоимость подтвердим после заявки</small>
+                <small style={{ marginTop: 8 }}>
+                  {approx.from ? (state.form.date ? "Выберите время приезда — посчитаем точно. " : "Новогодние цены зависят от даты — укажите её в форме. ") : ""}
+                  {approx.manager ? "Цену части позиций укажет менеджер. " : ""}
+                  {custom ? "«Индивидуальный» посчитаем отдельно. " : ""}Точную стоимость подтвердим после заявки
+                </small>
               </div>
               <div className="send" style={{ padding: 16 }}>
                 <button ref={sendRef} type="submit" form="lead-form" disabled={sending} className="pill pill--hot pill--big2" data-track="lead_submit_btn">
@@ -315,7 +325,10 @@ export function CartView() {
           {/* Без телефона submit() сам прокрутит к полю и подсветит его. */}
           <button type="button" className="barBtn barBtn--send" disabled={sending} onClick={() => void submit()} data-track="lead_submit_bar">
             <span>{sending ? "Отправляем…" : "Отправить заявку"}</span>
-            <span className="barSum num">{money(total)}</span>
+            <span className="barSum num">
+              {from}
+              {money(total)}
+            </span>
           </button>
         </div>
       )}

@@ -2,11 +2,11 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { restoreCart } from "@/data/cart-restore";
-import { buildLines, linesCount, linesTotal, type CartForm, type CartLine, type CartState } from "@/data/cart-lines";
+import { buildLines, linesApprox, linesCount, linesTotal, type CartForm, type CartLine, type CartState, type ProgramOpts } from "@/data/cart-lines";
 import { useCatalog } from "@/lib/catalog-context";
 import { track } from "@/lib/track";
 
-export type { CartForm, CartLine, CartPackage, CartState } from "@/data/cart-lines";
+export type { CartForm, CartLine, CartPackage, CartState, ProgramOpts } from "@/data/cart-lines";
 
 const EMPTY_FORM: CartForm = {
   childAge: "",
@@ -19,15 +19,18 @@ const EMPTY_FORM: CartForm = {
   km: 0,
   sound: false,
   soundAuto: false,
+  outdoor: false,
 };
 
-const EMPTY: CartState = { programs: [], extras: {}, packages: [], costumes: [], form: EMPTY_FORM };
+const EMPTY: CartState = { programs: [], extras: {}, packages: [], costumes: [], programOpts: {}, form: EMPTY_FORM };
 const KEY = "uly-cart-v1";
 
 interface CartApi {
   state: CartState;
   lines: CartLine[];
   total: number;
+  /** Итог не точный: есть «от» или «цену укажет менеджер». */
+  approx: { from: boolean; manager: boolean };
   count: number;
   ready: boolean;
   has: (type: "program" | "extra" | "package" | "costume", id: string) => boolean;
@@ -40,6 +43,8 @@ interface CartApi {
   setPackageChoices: (id: string, choices: Record<number, string>) => void;
   toggleCostume: (id: string) => void;
   setForm: (patch: Partial<CartForm>) => void;
+  /** Вариант, окно времени, число писем у новогодней программы. */
+  setProgramOpts: (id: string, patch: ProgramOpts) => void;
   clear: () => void;
   /** Последнее добавление — для всплывашки «Добавлено». */
   notice: { title: string; at: number } | null;
@@ -77,6 +82,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const lines = useMemo(() => buildLines(state, cat), [state, cat]);
   const total = useMemo(() => linesTotal(lines), [lines]);
+  const approx = useMemo(() => linesApprox(lines), [lines]);
   // Считаем по строкам: удалённые или скрытые в админке позиции из старой корзины не учитываются.
   const count = linesCount(lines);
 
@@ -153,6 +159,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setState((s) => ({ ...s, form: { ...s.form, ...patch } }));
   }, []);
 
+  // Выбор при «Убрать» не стираем: «Вернуть» восстановит строку такой же.
+  const setProgramOpts = useCallback((id: string, patch: ProgramOpts) => {
+    setState((s) => ({ ...s, programOpts: { ...s.programOpts, [id]: { ...s.programOpts[id], ...patch } } }));
+  }, []);
+
   const clear = useCallback(() => setState((s) => ({ ...EMPTY, form: { ...EMPTY_FORM, name: s.form.name, phone: s.form.phone } })), []);
 
   const dismissNotice = useCallback(() => setNotice(null), []);
@@ -161,6 +172,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     state,
     lines,
     total,
+    approx,
     count,
     ready,
     has,
@@ -172,6 +184,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setPackageChoices,
     toggleCostume,
     setForm,
+    setProgramOpts,
     clear,
     notice,
     dismissNotice,

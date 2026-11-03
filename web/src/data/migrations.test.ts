@@ -97,3 +97,32 @@ test("03.11 вечер: фотограф, возраст «от», числа в
   assert.equal(out.site!.faq[1].a, "1 500 ₽");
   assert.equal(out.packages, undefined);
 });
+
+const nyMig = MIGRATIONS.find((m) => m.id === "2026-11-03-ny-date-prices")!;
+
+test("новогодние цены: таблица и price = минимум; Дед Мороз — «30 минут или 1 час»", () => {
+  const c = snapshot();
+  c.programs = [
+    prog("p_ded", { price: 11900, dur: "30 минут (программа на 1 час: цена в личном чате)" }),
+    prog("p_letter", { price: 10900 }),
+    prog("p_grinch1", { price: 12900 }),
+    prog("p_grinch2", { price: 34900 }),
+    prog("p_yaga", { price: 9900 }),
+    prog("p_video", { price: 3900 }),
+  ];
+  const out = nyMig.apply(c).programs!;
+  const by = Object.fromEntries(out.map((p) => [p.id, p]));
+  assert.deepEqual(["p_ded", "p_letter", "p_grinch1", "p_grinch2", "p_yaga"].map((id) => by[id].price), [11000, 11000, 14300, 40300, 9900]);
+  assert.ok(by.p_ded.datePrices!.startsWith("Даты | Стандарт, 30 мин"));
+  assert.equal(by.p_ded.dur, "30 минут или 1 час");
+  assert.deepEqual(by.p_video, c.programs[5], "видео-поздравление не тронуто");
+  assert.equal(by.p_grinch1.inc, "старое", "остальные поля не тронуты");
+});
+
+test("новогодние цены: таблицу, вписанную Кириллом, и его длительность не перетираем; повтор ничего не меняет", () => {
+  const c = snapshot();
+  c.programs = [prog("p_ded", { price: 12000, dur: "30 минут", datePrices: "Даты | Цена\n1.12–31.12 | 12 000" }), prog("p_yaga")];
+  const once = { ...c, ...nyMig.apply(c) };
+  assert.deepEqual(once.programs[0], c.programs[0]);
+  assert.deepEqual({ ...once, ...nyMig.apply(structuredClone(once)) }, once);
+});

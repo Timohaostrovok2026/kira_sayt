@@ -7,6 +7,7 @@ import { AGE_GROUPS, MKAD_BASE, MKAD_PER_KM, SITE_KINDS, SOUND_PRICE, SPECIAL_EX
 import { useCatalog } from "@/lib/catalog-context";
 import { LINE_GROUPS, useCart, useRemoveLine } from "@/lib/cart";
 import { money, plural } from "@/lib/format";
+import { LinePrice } from "@/components/korzina/DatedControls";
 import { track } from "@/lib/track";
 import { ExtraCard, ProgramCard } from "@/components/cards";
 import { ANY_AGE, DOP_GROUPS, STEPS, parseAge, parseGroup, parseKind, resolveStep, type StepN } from "./model";
@@ -55,7 +56,7 @@ function StepHead({ n, title, text }: { n: number; title: string; text: string }
 
 /** Шаг 6: что выбрано, по группам, с суммой. */
 function Recap({ onStep }: { onStep: (n: StepN) => void }) {
-  const { lines, total } = useCart();
+  const { lines, total, approx } = useCart();
   const remove = useRemoveLine();
   const items = lines.filter((l) => l.type !== "mkad" && l.type !== "sound");
   if (!items.length)
@@ -90,7 +91,9 @@ function Recap({ onStep }: { onStep: (n: StepN) => void }) {
                     {l.qty > 1 ? ` × ${l.qty}` : ""}
                     {l.subtitle && <small>{l.subtitle}</small>}
                   </div>
-                  <div className="p num">{l.price ? money(l.price) : ""}</div>
+                  <div className="p num">
+                    <LinePrice l={l} />
+                  </div>
                   <button className="rmx" type="button" aria-label="Убрать" onClick={() => remove(l)}>
                     ×
                   </button>
@@ -102,10 +105,13 @@ function Recap({ onStep }: { onStep: (n: StepN) => void }) {
       })}
       <div className="rcsum">
         <span>Ориентировочно</span>
-        <b className="num">{money(total)}</b>
+        <b className="num">
+          {approx.from ? "от " : ""}
+          {money(total)}
+        </b>
       </div>
       <p className="hint" style={{ marginTop: 10 }}>
-        Цена ориентировочная. Точную сумму подтвердим после заявки. Выезд за МКАД и усиленный звук добавляются в заявке.
+        Цена ориентировочная. Точную сумму подтвердим после заявки.{approx.from ? " Новогодние цены зависят от даты — укажите её в заявке." : ""} Выезд за МКАД и усиленный звук добавляются в заявке.
       </p>
       <div className="sum" style={{ marginTop: 14 }}>
         <div>

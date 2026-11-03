@@ -47,3 +47,11 @@ test("из списков выкидываются чужие элементы, 
   assert.deepEqual(r.packages, [{ id: "k_1", choices: {} }]);
   assert.deepEqual(r.form, { name: "", km: 0, sound: true });
 });
+
+test("выбор у новогодних программ: только известные поля нужного типа", () => {
+  const empty = { ...EMPTY, programOpts: {} as Record<string, { col?: string; slot?: string; qty?: number }> };
+  const r = restoreCart({ programOpts: { p_ded: { col: "Премиум, 30 мин", slot: "19:00–22:59", qty: 2, x: 1 }, p_letter: { qty: -1, col: 5 }, p_bad: "мусор" } }, empty);
+  assert.deepEqual(r.programOpts, { p_ded: { col: "Премиум, 30 мин", slot: "19:00–22:59", qty: 2 }, p_letter: {} });
+  assert.deepEqual(restoreCart({ programs: ["p_ded"] }, empty).programOpts, {}, "старая корзина без выбора");
+  assert.deepEqual(restoreCart({ programOpts: [1, 2] }, empty).programOpts, {});
+});

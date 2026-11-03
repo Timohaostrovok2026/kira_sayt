@@ -24,9 +24,9 @@ const cat = buildCatalog({
 } satisfies CatalogData);
 
 const form = (f: Partial<CartState["form"]> = {}): CartState["form"] => ({
-  childAge: "", date: "", place: "", name: "", phone: "", note: "", outsideMkad: false, km: 0, sound: false, soundAuto: false, ...f,
+  childAge: "", date: "", place: "", name: "", phone: "", note: "", outsideMkad: false, km: 0, sound: false, soundAuto: false, outdoor: false, ...f,
 });
-const cart = (s: Partial<CartState>): CartState => ({ programs: [], extras: {}, packages: [], costumes: [], form: form(), ...s });
+const cart = (s: Partial<CartState>): CartState => ({ programs: [], extras: {}, packages: [], costumes: [], programOpts: {}, form: form(), ...s });
 
 test("пакет со скидкой и выбранным вариантом: цена, полная цена и состав", () => {
   const [l] = buildLines(cart({ packages: [{ id: "gift", choices: { 1: "paper" } }] }), cat);
@@ -94,4 +94,88 @@ test("герой — без цены (ЦЕН-4); итог всей корзин�
   // 10 000 + 22 900 (пакет) + 0 + 16 800 + 0 + 3 500 (МКАД 2 000 + 10 × 150) + 4 500
   assert.equal(linesTotal(ls), 57700);
   assert.equal(linesCount(ls), 5);
+});
+
+// ---------- Новогодние программы с ценами по датам (вариант А, раунды 29–33) ----------
+import { NY_DATE_PRICES } from "./migrations.ts";
+import { linesApprox } from "./cart-lines.ts";
+
+const ny = (id: string): Program => ({ ...prog(id, 1), kind: "Новый год", datePrices: NY_DATE_PRICES[id] });
+const nyCat = buildCatalog({
+  programs: [ny("p_ded"), ny("p_letter"), ny("p_grinch1"), ny("p_grinch2"), ny("p_yaga"), prog("p1", 10000), { ...prog("p_bad", 5000), datePrices: "мусор" }],
+  extras: [],
+  packages: [],
+  costumes: [],
+  costumeCats: [],
+} satisfies CatalogData);
+const nyLine = (id: string, date: string, opts: CartState["programOpts"][string] = {}) =>
+  buildLines(cart({ programs: [id], programOpts: { [id]: opts }, form: form({ date }) }), nyCat)[0];
+
+test("Дед Мороз: точная цена по дате и варианту, подпись — вариант", () => {
+  const l = nyLine("p_ded", "2026-12-28", { col: "Премиум, 1 час" });
+  assert.deepEqual([l.price, l.mode, l.subtitle], [47900, undefined, "Премиум, 1 час"]);
+});
+
+test("без даты — «от» по варианту; итог помечен «от»", () => {
+  const l = nyLine("p_ded", "");
+  assert.deepEqual([l.price, l.mode, l.note], [11000, "from", "Цена зависит от даты"]);
+  assert.deepEqual(linesApprox([l]), { from: true, manager: false });
+});
+
+test("Стандарт 24.12 → Премиум с подписью; выбор клиента не теряется", () => {
+  const l = nyLine("p_ded", "2026-12-24", { col: "Стандарт, 30 мин" });
+  assert.deepEqual([l.price, l.subtitle, l.note], [27600, "Премиум, 30 мин", "На эту дату — только Премиум"]);
+  assert.equal(l.dated!.want, 0);
+  assert.equal(l.dated!.col, 1);
+});
+
+test("31.12 с окном — цена окна, окно в подписи", () => {
+  const l = nyLine("p_ded", "2026-12-31", { col: "Премиум, 30 мин", slot: "19:00–22:59" });
+  assert.deepEqual([l.price, l.subtitle], [39100, "Премиум, 30 мин · 19:00–22:59"]);
+  assert.equal(nyLine("p_grinch1", "2026-12-31", { slot: "23:00–00:59" }).price, 57200);
+});
+
+test("дата вне таблицы — 0 и «укажет менеджер», не в «от»", () => {
+  const l = nyLine("p_grinch1", "2027-01-05");
+  assert.deepEqual([l.price, l.mode, l.note], [0, "manager", "Цену укажет менеджер"]);
+  assert.deepEqual(linesApprox([l]), { from: false, manager: true });
+});
+
+test("письма: до 2 — цена по дате, каждое следующее +2 000; 31.12 — менеджер", () => {
+  const p = (qty: unknown, date = "2026-12-10") => nyLine("p_letter", date, { qty: qty as number }).price;
+  assert.deepEqual([p(1), p(2), p(3), p(5)], [11000, 11000, 13000, 17000]);
+  assert.equal(p(4, "2026-12-27"), 18300);
+  assert.equal(nyLine("p_letter", "2026-12-10", { qty: 3 }).subtitle, "3 письма");
+  assert.equal(p(3, ""), 13000, "без даты — «от» тоже с письмами");
+  assert.equal(nyLine("p_letter", "2026-12-31", { qty: 5 }).price, 0);
+  assert.deepEqual([p(0), p(-3), p(2.5), p("7"), p(1000)], [11000, 11000, 11000, 11000, 11000 + 28 * 2000], "мусор — 1 письмо, больше 30 — 30");
+});
+
+test("битая таблица в базе — «укажет менеджер», сайт не падает", () => {
+  const l = nyLine("p_bad", "2026-12-10");
+  assert.deepEqual([l.price, l.mode], [0, "manager"]);
+});
+
+test("мусорный выбор из памяти браузера не ломает расчёт", () => {
+  const l = nyLine("p_ded", "2026-12-10", { col: 5 as unknown as string, slot: {} as unknown as string });
+  assert.equal(l.price, 11000);
+});
+
+test("на улице: только новогодние программы, сумма по программам; письмо и обычные не считаются", () => {
+  const ls = buildLines(cart({ programs: ["p_ded", "p_grinch2", "p_letter", "p1"], form: form({ outdoor: true, date: "2026-12-10" }) }), nyCat);
+  const o = ls.find((l) => l.type === "outdoor")!;
+  assert.equal(o.price, 16000);
+  assert.equal(linesCount(ls), 4, "улица — не позиция");
+  assert.equal(buildLines(cart({ programs: ["p_letter", "p1"], form: form({ outdoor: true }) }), nyCat).some((l) => l.type === "outdoor"), false);
+  assert.equal(buildLines(cart({ programs: ["p_yaga"], form: form({ outdoor: false }) }), nyCat).length, 1);
+});
+
+test("три примера суммы заявки вручную", () => {
+  const total = (s: Partial<CartState>) => linesTotal(buildLines(cart(s), nyCat));
+  // 1) Дед Мороз Премиум 1 час 20.12 + 3 письма 20.12 + выезд 10 км: 40 500 + 13 000 + 3 500 = 57 000
+  assert.equal(total({ programs: ["p_ded", "p_letter"], programOpts: { p_ded: { col: "Премиум, 1 час" }, p_letter: { qty: 3 } }, form: form({ date: "2026-12-20", outsideMkad: true, km: 10 }) }), 57000);
+  // 2) Гринч 31.12 18:00–22:59 + на улице + звук: 34 100 + 2 000 + 4 500 = 40 600
+  assert.equal(total({ programs: ["p_grinch1"], programOpts: { p_grinch1: { slot: "18:00–22:59" } }, form: form({ date: "2026-12-31", outdoor: true, sound: true }) }), 40600);
+  // 3) Спектакль 2.01 + Баба Яга 2.01 (вне таблицы — менеджер, 0) + на улице: 72 800 + 0 + 12 000 + 2 000 = 86 800
+  assert.equal(total({ programs: ["p_grinch2", "p_yaga"], form: form({ date: "2027-01-02", outdoor: true }) }), 86800);
 });

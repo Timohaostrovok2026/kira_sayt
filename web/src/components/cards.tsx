@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, type ReactNode } from "react";
-import { KIND_CLASS, ageBig, ageText, lines, slotRef, splitHow, type Extra, type Package, type Program } from "@/data/catalog";
+import { KIND_CLASS, ageBig, ageText, lines, programFrom, slotRef, splitHow, type Extra, type Package, type Program } from "@/data/catalog";
 import { useCart } from "@/lib/cart";
 import { useCatalog } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
@@ -70,8 +70,11 @@ export function Stars() {
 /** Программа: цветная обложка с крупным возрастом, описание, цена, «Подробнее» и «Выбрать». */
 export function ProgramCard({ p }: { p: Program }) {
   const { has, toggleProgram } = useCart();
+  const { tableById } = useCatalog();
   const on = has("program", p.id);
   const href = `/programmy/${p.id}`;
+  // Новогодние цены по датам: на карточке — наименьшая с «от» (раунды 25, 29 — исключение из «цены без „от“»).
+  const cost = programFrom(p, tableById);
   return (
     <article className="pcard">
       <Link href={href} className={`cover ${KIND_CLASS[p.kind] ?? "k-anim"}`} aria-label={`Открыть программу ${p.name}`} data-track={`program_open_${p.id}`}>
@@ -91,7 +94,10 @@ export function ProgramCard({ p }: { p: Program }) {
           {p.art && <span>{p.art}</span>}
         </div>
         <div className="card-foot">
-          <div className="cost num">{money(p.price)}</div>
+          <div className="cost num">
+            {cost.from ? `от ${money(cost.price)}` : money(cost.price)}
+            {cost.from && <small>цена зависит от даты</small>}
+          </div>
           <div className="btn-row">
             <Link className="pill pill--ghost pill--sm" href={href}>
               Подробнее

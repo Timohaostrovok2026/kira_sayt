@@ -25,7 +25,26 @@ export function restoreLike<T extends object>(saved: unknown, empty: T): T {
 }
 
 /** Корзина целиком: верхние поля по типу, а в списках — только элементы нужного вида. */
-export function restoreCart<T extends { programs: string[]; costumes: string[]; packages: { id: string }[]; extras: Record<string, number> }>(
+type Opts = { col?: string; slot?: string; qty?: number };
+
+/** Выбор у новогодних программ: только известные поля нужного типа. */
+function restoreOpts(v: Record<string, unknown>): Record<string, Opts> {
+  const out: Record<string, Opts> = {};
+  for (const [id, o] of Object.entries(v)) {
+    if (kind(o) !== "object") continue;
+    const r = o as Record<string, unknown>;
+    const x: Opts = {};
+    if (typeof r.col === "string") x.col = r.col.slice(0, 80);
+    if (typeof r.slot === "string") x.slot = r.slot.slice(0, 40);
+    if (typeof r.qty === "number" && Number.isInteger(r.qty) && r.qty > 0) x.qty = Math.min(r.qty, 100);
+    out[id] = x;
+  }
+  return out;
+}
+
+export function restoreCart<
+  T extends { programs: string[]; costumes: string[]; packages: { id: string }[]; extras: Record<string, number>; programOpts?: Record<string, Opts> },
+>(
   saved: unknown,
   empty: T,
 ): T {
@@ -37,5 +56,6 @@ export function restoreCart<T extends { programs: string[]; costumes: string[]; 
     costumes: strings(s.costumes),
     packages: s.packages.filter((p) => kind(p) === "object" && typeof p.id === "string" && kind((p as { choices?: unknown }).choices) === "object"),
     extras: Object.fromEntries(Object.entries(s.extras).filter(([, n]) => Number.isInteger(n) && n > 0)),
+    ...(s.programOpts && { programOpts: restoreOpts(s.programOpts) }),
   };
 }

@@ -114,6 +114,7 @@ const CLICK_EXACT: Record<string, string> = {
   cart_undo: "Корзина: «Вернуть»",
   cart_sound: "Корзина: звук",
   cart_mkad: "Корзина: выезд за МКАД",
+  cart_outdoor: "Корзина: праздник на улице",
   cart_empty_wa: "Пустая корзина: WhatsApp",
   cart_empty_tg: "Пустая корзина: Telegram",
   pwa_install: "Плашка «На экран»: «Установить»",

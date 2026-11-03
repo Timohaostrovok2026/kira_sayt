@@ -17,6 +17,7 @@ import {
   type Program,
 } from "@/data/catalog";
 import { money, normQuery } from "@/lib/format";
+import { DatePricesField } from "./DatePricesField";
 import { useRemove } from "./ItemList";
 import { Field, IconBtn, Input, NumberInput, PhotoField, Select, Sheet, Switch, Textarea, inputCls, useAdmin } from "./ui";
 
@@ -143,8 +144,8 @@ export function ProgramEditor({ id, onClose }: { id: string | null; onClose: () 
         </Select>
       </Field>
       <div className="grid grid-cols-2 gap-3">
-        <Field label="Цена, ₽">
-          <NumberInput value={d.price} onChange={(v) => ed.set({ price: v ?? 0 })} />
+        <Field label="Цена, ₽" hint={d.datePrices?.trim() ? "Из таблицы цен по датам — наименьшая" : undefined}>
+          <NumberInput value={d.price} onChange={(v) => ed.set({ price: v ?? 0 })} disabled={!!d.datePrices?.trim()} />
         </Field>
         <Field label="Длительность" hint="«От 1 часа» — цена покажется как «от»">
           <Input value={d.dur ?? ""} onChange={(e) => ed.set({ dur: e.target.value })} />
@@ -160,6 +161,7 @@ export function ProgramEditor({ id, onClose }: { id: string | null; onClose: () 
       <Field label="Что входит" hint="Каждый пункт с новой строки">
         <Textarea value={d.inc ?? ""} onChange={(v) => ed.set({ inc: v })} rows={6} />
       </Field>
+      {(d.kind === "Новый год" || d.datePrices?.trim()) && <DatePricesField value={d.datePrices ?? ""} onChange={(v) => ed.set({ datePrices: v })} />}
       <CoverPicker costumes={data.catalog.costumes} value={d.cover} img={cat.costumeImg} onPick={(c) => ed.set({ cover: c })} disabled={!!d.photo} />
       <PhotoField
         label="Или своё фото программы"

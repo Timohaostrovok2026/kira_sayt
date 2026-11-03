@@ -1,17 +1,21 @@
 "use client";
 
 import { useEffect } from "react";
-import { MKAD_BASE, MKAD_PER_KM, SOUND_PRICE } from "@/data/catalog";
+import { MKAD_BASE, MKAD_PER_KM, OUTDOOR_PRICE, SOUND_PRICE } from "@/data/catalog";
 import { useCart } from "@/lib/cart";
 import { useCatalog } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
 import { needsLoudSound } from "./lead";
 
-/** Выезд за МКАД и усиленный звук — переключатели, как в черновике Кирилла. */
+/** Выезд за МКАД, праздник на улице (новогодние программы) и усиленный звук — переключатели, как в черновике Кирилла. */
 export function CartOptions() {
   const { state, ready, setForm } = useCart();
   const f = state.form;
-  const loud = needsLoudSound(state, useCatalog());
+  const cat = useCatalog();
+  const loud = needsLoudSound(state, cat);
+  // «На улице» — только новогодние программы (раунд 33): переключатель виден, когда такая программа в заявке.
+  const outdoor = state.programs.filter((id) => cat.programById[id] && OUTDOOR_PRICE[id]);
+  const outdoorSum = outdoor.reduce((s, id) => s + OUTDOOR_PRICE[id], 0);
 
   // Бумажное шоу без усиленного звука не провести — включаем сами, один раз, когда оно появилось в корзине.
   // Флаг — в корзине, а не в компоненте: иначе после возврата на страницу звук включался снова.
@@ -49,6 +53,15 @@ export function CartOptions() {
             onChange={(e) => setForm({ km: Math.min(300, Math.max(0, Math.floor(Number(e.target.value) || 0))) })}
           />
         </div>
+      )}
+      {outdoor.length > 0 && (
+        <label className="opt-line" data-track="cart_outdoor">
+          <input type="checkbox" checked={f.outdoor} onChange={(e) => setForm({ outdoor: e.target.checked })} />
+          <span>
+            Праздник на улице +{money(outdoorSum)}
+            <small>Зимой — {money(2000)} за каждый начатый час на каждого артиста: {outdoor.map((id) => `${cat.programById[id].name} — ${money(OUTDOOR_PRICE[id])}`).join(", ")}.</small>
+          </span>
+        </label>
       )}
       <label className="opt-line" data-track="cart_sound">
         <input type="checkbox" checked={f.sound} onChange={(e) => setForm({ sound: e.target.checked })} />

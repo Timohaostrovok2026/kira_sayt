@@ -37,7 +37,8 @@ const state = (form: Partial<CartState["form"]> = {}): CartState => ({
   extras: { cryo: 2, ball: 3 },
   packages: [{ id: "custom", choices: {} }],
   costumes: [],
-  form: { childAge: "", date: "", place: "", name: "Анна", phone: "+7 (977) 593-97-39", note: "", outsideMkad: true, km: 0, sound: true, soundAuto: false, ...form },
+  programOpts: {},
+  form: { childAge: "", date: "", place: "", name: "Анна", phone: "+7 (977) 593-97-39", note: "", outsideMkad: true, km: 0, sound: true, soundAuto: false, outdoor: false, ...form },
 });
 const lines: CartLine[] = [
   { key: "p:p1", type: "program", id: "p1", title: "Программа p1", qty: 1, price: 10000 },
@@ -94,4 +95,32 @@ test("бумажное шоу в слоте пакета требует усил
   assert.equal(needsLoudSound(s(), c), false);
   assert.equal(needsLoudSound(s("e_paper"), c), true);
   assert.equal(needsLoudSound({ ...state(), packages: [], extras: { e_paper: 1 } }, c), true);
+});
+
+test("новогодние позиции: вариант, время, письма, «от», «укажет менеджер», улица — в тексте для менеджера", async () => {
+  const { NY_DATE_PRICES } = await import("../../data/migrations.ts");
+  const { buildLines, linesTotal } = await import("../../data/cart-lines.ts");
+  const ny = (id: string, name: string): Program => ({ ...prog(id, 1), name, kind: "Новый год", datePrices: NY_DATE_PRICES[id] });
+  const c = buildCatalog({ programs: [ny("p_ded", "Дед Мороз"), ny("p_letter", "Письмо"), ny("p_grinch1", "Гринч")], extras: [], packages: [], costumes: [], costumeCats: [] });
+  const s = (date: string): CartState => ({
+    ...state({ outsideMkad: false, sound: false, outdoor: true, date }),
+    programs: ["p_ded", "p_letter", "p_grinch1"],
+    extras: {},
+    packages: [],
+    programOpts: { p_ded: { col: "Премиум, 30 мин", slot: "19:00–22:59" }, p_letter: { qty: 3 }, p_grinch1: { slot: "18:00–22:59" } },
+  });
+  const st = s("2026-12-31");
+  const ls = buildLines(st, c);
+  const text = buildLeadText(st, ls, linesTotal(ls), c);
+  assert.match(text, /• Дед Мороз \(Премиум, 30 мин · 19:00–22:59\) — 39 100 ₽/);
+  assert.match(text, /• Письмо \(3 письма\) — цену укажет менеджер/);
+  assert.match(text, /• Гринч \(18:00–22:59\) — 34 100 ₽/);
+  assert.match(text, /Праздник на улице \(Дед Мороз, Гринч\) — 6 000 ₽/);
+  assert.match(text, /Итого ориентировочно: 79 200 ₽ \(цену части позиций укажет менеджер\)/);
+  assert.match(text, /Дата: 31\.12\.2026/);
+  const st2 = s("");
+  const ls2 = buildLines(st2, c);
+  const t2 = buildLeadText(st2, ls2, linesTotal(ls2), c);
+  assert.match(t2, /• Дед Мороз \(Премиум, 30 мин\) — от 16 100 ₽, цена зависит от даты/);
+  assert.match(t2, /Итого ориентировочно: от /);
 });

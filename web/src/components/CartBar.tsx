@@ -15,7 +15,7 @@ export function CartBar() {
   const path = usePathname();
   const step = useSearchParams().get("step");
   const lastStep = path.startsWith("/sobrat") && step === "6";
-  const { count, total, ready } = useCart();
+  const { count, total, approx, ready } = useCart();
   const ref = useRef<HTMLAnchorElement>(null);
   const sig = `${count}|${total}`;
   const prev = useRef("init");
@@ -43,7 +43,12 @@ export function CartBar() {
       <Link ref={ref} href="/korzina" className="barBtn" data-track="bar_cart">
         <span>Заявка · {count}</span>
         {/* Только «Индивидуальный» — суммы нет, его считают после разговора: «0 ₽» не показываем. */}
-        {total > 0 && <span className="barSum num">{money(total)}</span>}
+        {total > 0 && (
+          <span className="barSum num">
+            {approx.from ? "от " : ""}
+            {money(total)}
+          </span>
+        )}
         <span className="barGo">
           Оформить <Go />
         </span>
