@@ -143,6 +143,13 @@ test("1 января: только ночные окна; днём — «ука�
   assert.equal(at(ded, "2027-01-01", P30, "06:00–12:59").mode, "manager", "дневное окно 31.12 на 1.01 не действует");
   assert.equal(at(grinch, "2027-01-01", undefined, "23:00–00:59").price, 57200);
   assert.equal(at(grinch, "2027-01-01").mode, "manager");
+  assert.deepEqual(at(ded, "2027-01-01", S30).off, [0, 2], "1.01 только Премиум — Стандарт неактивен");
+  // Ночные окна прошлой даты и своя цена на день: без выбора окна — дневная цена, а не «днём укажет менеджер».
+  const both = parseDatePrices("Даты | Цена\n31.12 20:00–22:59 | 5 000\n31.12 23:00–00:59 | 9 000\n1.01–3.01 | 3 000").table!;
+  const day = priceFor(both, { date: "2027-01-01" });
+  assert.deepEqual([day.mode, day.price, day.nightOnly], ["exact", 3000, false]);
+  assert.equal(priceFor(both, { date: "2027-01-01", slot: "23:00–00:59" }).price, 9000);
+  assert.match(parseDatePrices("Даты | Цена\n31.12 24:30–01:00 | 1")!.errors[0], /не понял время/);
 });
 
 test("ночные окна последнего дня короткого месяца находятся на следующий день", () => {

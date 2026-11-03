@@ -55,6 +55,8 @@ export interface DatedInfo {
   nightOnly?: boolean;
   /** Число писем — только у Волшебного письма. */
   letters?: number;
+  /** Выбор клиента одной строкой («Премиум, 1 час · 19:00–22:59 · 3 письма») — для текста заявки; пусто — выбора нет. */
+  choice: string;
 }
 
 export interface CartLine {
@@ -108,12 +110,13 @@ export function buildLines(s: CartState, cat: Catalog): CartLine[] {
         let price = r.price;
         if (letters && r.mode !== "manager") price += Math.max(0, letters - LETTER.included) * LETTER.add;
         const parts = [t.cols.length > 1 ? t.cols[r.col] : "", slotLabel(r.slot, r.windows), letters ? `${letters} ${plural(letters, "письмо", "письма", "писем")}` : ""];
+        const choice = parts.filter(Boolean).join(" · ");
         Object.assign(line, {
           price,
-          subtitle: parts.filter(Boolean).join(" · ") || p.kind,
+          subtitle: choice || p.kind,
           mode: r.mode === "exact" ? undefined : r.mode,
           note: r.note,
-          dated: { cols: t.cols, want: Math.max(0, t.cols.indexOf(col ?? "")), col: r.col, off: r.off, windows: r.windows, windowPrices, slot: r.slot, nightOnly: r.nightOnly, letters },
+          dated: { cols: t.cols, want: Math.max(0, t.cols.indexOf(col ?? "")), col: r.col, off: r.off, windows: r.windows, windowPrices, slot: r.slot, nightOnly: r.nightOnly, letters, choice },
         });
       }
     }

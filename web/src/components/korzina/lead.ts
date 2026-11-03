@@ -56,7 +56,7 @@ export function todayIso() {
 
 /* ---------- Текст заявки ---------- */
 
-function lineText(l: CartLine, cat: Catalog) {
+function lineText(l: CartLine, cat: Catalog, date: string) {
   if (l.type === "package") {
     const pk = cat.packageById[l.id];
     if (pk?.custom) return `• ${l.title} — стоимость обсудим`;
@@ -64,9 +64,10 @@ function lineText(l: CartLine, cat: Catalog) {
   }
   if (l.dated || l.mode) {
     // Новогодняя программа: вариант, время приезда и письма — в скобках; дата — ниже, в «Дата:».
-    const what = l.dated && l.subtitle ? ` (${l.subtitle})` : "";
+    // В скобках — только выбор клиента (вариант, время, письма), без подписи по умолчанию.
+    const what = l.dated?.choice ? ` (${l.dated.choice})` : "";
     if (l.mode === "manager") return `• ${l.title}${what} — цену укажет менеджер`;
-    if (l.mode === "from") return `• ${l.title}${what} — от ${money(l.price)}, цена зависит от даты`;
+    if (l.mode === "from") return `• ${l.title}${what} — от ${money(l.price)}, ${date ? "цена зависит от времени приезда" : "цена зависит от даты"}`;
     return `• ${l.title}${what} — ${money(l.price)}`;
   }
   if (l.type === "extra") {
@@ -82,7 +83,7 @@ export function buildLeadText(s: CartState, lines: CartLine[], total: number, ca
   const out: string[] = ["Здравствуйте! Хочу заказать праздник."];
 
   const block = (title: string, ls: CartLine[]) => {
-    if (ls.length) out.push("", `${title}:`, ...ls.map((l) => lineText(l, cat)));
+    if (ls.length) out.push("", `${title}:`, ...ls.map((l) => lineText(l, cat, s.form.date)));
   };
   block("Программы", by("program"));
   block("Пакеты", by("package"));

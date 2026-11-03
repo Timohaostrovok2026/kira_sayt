@@ -2,7 +2,7 @@
  * Новогодние цены по датам (вариант А, раунды 29–33; техническое решение Т19).
  * Кирилл правит таблицу в админке одним текстовым полем программы `datePrices`:
  *
- *   Даты | Стандарт, 30 мин | Премиум, 30 мин
+ *   Даты | Стандарт | Премиум
  *   1.12–13.12 | 11 000 | 16 100
  *   23.12–27.12 | — | 27 600
  *   31.12 06:00–12:59 | — | 28 750
@@ -72,7 +72,7 @@ function minutes(s: string): number | null {
   if (!m) return null;
   const h = Number(m[1]);
   const mi = Number(m[2]);
-  return h <= 24 && mi < 60 ? h * 60 + mi : null;
+  return h < 24 && mi < 60 ? h * 60 + mi : null;
 }
 
 /** Число из клетки: «16 100», «16 100 ₽», «16100». Пусто или тире — варианта нет. */
@@ -313,7 +313,9 @@ export function priceFor(t: PriceTable, opt: { col?: string; date?: string; slot
   const night = t.rows.filter((r) => r.window?.night && r.from === prevDay(day));
   const timed = own.length ? own : night;
   const windows = timed.map((r) => r.window!);
-  const nightOnly = night.length > 0 && !own.length;
+  const plain = t.rows.find((r) => !r.window && r.from <= day && day <= r.to);
+  // Только ночные окна прошлой даты и нет цены на сам день (1.01): без выбора — «днём укажет менеджер».
+  const nightOnly = night.length > 0 && !own.length && !plain;
   const chosen = timed.find((r) => r.window!.label === opt.slot);
 
   let row: PriceRow | undefined;
@@ -324,9 +326,13 @@ export function priceFor(t: PriceTable, opt: { col?: string; date?: string; slot
     const { col, off } = pickCol(t, own, want);
     const vals = own.map((r) => r.cells[col]).filter((x): x is number => x != null);
     return { col, off, windows, mode: "from", price: Math.min(...vals), note: "Выберите время приезда" };
-  } else row = t.rows.find((r) => !r.window && r.from <= day && day <= r.to);
+  } else row = plain;
 
-  if (!row) return { ...base, windows, nightOnly, mode: "manager", price: 0, note: "Цену укажет менеджер" };
+  if (!row) {
+    // Варианты считаем по ночным окнам (1.01 — только Премиум): Стандарт неактивен и в подписи не стоит.
+    const { col, off } = night.length ? pickCol(t, night, want) : { col: want, off: [] as number[] };
+    return { col, off, windows, nightOnly, mode: "manager", price: 0, note: "Цену укажет менеджер" };
+  }
 
   // Варианта на эту дату нет (Стандарт после 22.12) — считаем доступный той же длительности, с пометкой.
   const { col, off, swapped } = pickCol(t, [row], want);
