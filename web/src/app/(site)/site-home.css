@@ -102,13 +102,14 @@
 .k-grad { --c1: var(--rasp-500); --c2: #fff; --cv: var(--lime); }
 
 /* ---- шоу и допы ---- */
-.xcard { display: grid; gap: 8px; align-content: start; min-width: 0; background: #fff; color: var(--text); border-radius: var(--r-md); padding: 18px 20px; box-shadow: 0 10px 30px rgba(126, 15, 69, 0.08); }
+.xcard { display: flex; flex-direction: column; gap: 8px; min-width: 0; background: #fff; color: var(--text); border-radius: var(--r-md); padding: 18px 20px; box-shadow: 0 10px 30px rgba(126, 15, 69, 0.08); }
 .xcard h4 { font-family: var(--head); font-weight: 900; text-transform: uppercase; font-size: 18px; line-height: 1.02; letter-spacing: -0.012em; color: var(--rasp-700); }
 .xcard .intro { font-size: 15px; color: var(--text-soft); }
 .xcard details summary { cursor: pointer; font-weight: 800; font-size: 13px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--hot); }
 .xcard details[open] summary { margin-bottom: 10px; }
 .xcard .checks { font-size: 14.5px; }
-.xcard .card-foot { align-self: end; }
+/* колонка, а не сетка: цена и «Добавить» всегда внизу карточки, ровно по ряду — и без «Что входит» */
+.xcard .card-foot { align-self: stretch; }
 .xgroup { margin-top: 30px; }
 .xgroup h3 { font-family: var(--head); font-weight: 900; text-transform: uppercase; font-size: 28px; color: var(--rasp-700); margin-bottom: 14px; }
 /* на главной ленты хитов и шоу листаются пальцем */
