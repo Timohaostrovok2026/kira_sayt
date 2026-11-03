@@ -73,6 +73,7 @@ export function CartView() {
   const [showErrors, setShowErrors] = useState(false);
   const phoneRef = useRef<HTMLInputElement>(null);
   const sendRef = useRef<HTMLButtonElement>(null);
+  const hpRef = useRef<HTMLInputElement>(null);
   const [barVisible, setBarVisible] = useState(false);
   const [typing, setTyping] = useState(false);
   // «Убрали: … · Вернуть» — 5 секунд (решение владельца 03.11: на телефоне легко промахнуться по «Убрать»).
@@ -120,10 +121,16 @@ export function CartView() {
       const r = await fetch("/api/lead", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ visitor: visitorId(), name: state.form.name.trim(), phone: state.form.phone, total, text, payload: state }),
+        body: JSON.stringify({ visitor: visitorId(), name: state.form.name.trim(), phone: state.form.phone, total, text, payload: state, hp: hpRef.current?.value || undefined }),
         signal: ctrl.signal,
       });
       const j = (await r.json().catch(() => null)) as { ok?: boolean; id?: number } | null;
+      if (r.status === 429) {
+        track("lead_fail", { total, reason: "limit" });
+        flushNow();
+        setResult({ ok: false, text, total, limited: true });
+        return;
+      }
       if (!r.ok || !j?.ok || typeof j.id !== "number") throw new Error("lead_failed");
       track("lead_ok", { id: j.id });
       flushNow();
@@ -199,6 +206,11 @@ export function CartView() {
                 Куда прислать ответ <small>обязателен только телефон</small>
               </h2>
               <LeadForm showErrors={showErrors} phoneRef={phoneRef} />
+              {/* Ловушка для ботов: человек поле не видит и не заполнит; не display:none — такие боты пропускают. */}
+              <div aria-hidden="true" style={{ position: "absolute", left: -9999, width: 1, height: 1, overflow: "hidden" }}>
+                <label htmlFor="lead-hp">Оставьте пустым</label>
+                <input ref={hpRef} id="lead-hp" name="hp_extra" type="text" tabIndex={-1} autoComplete="off" defaultValue="" />
+              </div>
             </form>
           </div>
 

@@ -1,7 +1,8 @@
 import { after } from "next/server";
-import { readJsonLimited, TOO_LARGE } from "@/data/rate-limit";
+import { clientIp, readJsonLimited, TOO_LARGE } from "@/data/rate-limit";
 import { getDb } from "@/lib/db";
 import { deliverLead } from "@/lib/leads";
+import { limits } from "@/lib/limits";
 
 interface LeadBody {
   visitor?: string;
@@ -10,15 +11,23 @@ interface LeadBody {
   total?: number;
   text?: string;
   payload?: unknown;
+  /** Поле-ловушка: невидимо для человека, его заполняют только боты. */
+  hp?: unknown;
 }
 
 export async function POST(req: Request) {
+  // Клиент с лимитом не теряет заявку: браузер покажет кнопки мессенджеров с готовым текстом.
+  if (!limits.lead.hit(clientIp(req.headers.get("x-forwarded-for")))) {
+    return Response.json({ ok: false, error: "too_many" }, { status: 429 });
+  }
   // Настоящая заявка — несколько килобайт; 100 КБ с запасом.
   const parsed = await readJsonLimited(req, 100_000);
   if (parsed === TOO_LARGE) return Response.json({ ok: false, error: "too_large" }, { status: 413 });
   // `null`, число или массив — тоже корректный JSON; без проверки дальше падение и ответ 500.
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return Response.json({ ok: false, error: "bad_json" }, { status: 400 });
   const b = parsed as LeadBody;
+  // Бот заполнил ловушку — отвечаем «принято», чтобы он не пробовал иначе, но никуда не пишем.
+  if (b.hp) return Response.json({ ok: true, id: 0 });
   const phone = String(b.phone ?? "").trim();
   const text = String(b.text ?? "").slice(0, 6000);
   // Та же проверка, что в браузере: ровно 10 цифр номера (+7/8 впереди не считаем), а не просто «10 цифр с кодом».

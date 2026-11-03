@@ -26,8 +26,17 @@ const { POST } = await import("./route.ts");
 const { getDb } = await import("../../../lib/db.ts");
 afterAll(() => g.__siteDb?.close());
 
-const post = (body: unknown) =>
-  POST(new Request("http://x/api/lead", { method: "POST", body: typeof body === "string" ? body : JSON.stringify(body) }));
+// Каждый запрос — со своего адреса, иначе остальные тесты упрутся в лимит заявок.
+let ipSeq = 0;
+const post = (body: unknown, ip = `10.0.0.${++ipSeq}`) =>
+  POST(
+    new Request("http://x/api/lead", {
+      method: "POST",
+      body: typeof body === "string" ? body : JSON.stringify(body),
+      headers: { "x-forwarded-for": ip },
+    }),
+  );
+const count = () => Number((getDb().prepare("SELECT COUNT(*) n FROM leads").get() as { n: number }).n);
 const row = (id: number) => getDb().prepare("SELECT * FROM leads WHERE id = ?").get(id) as Record<string, unknown>;
 
 test("заявка с телефоном и текстом сохраняется и уходит в доставку", async () => {
@@ -92,4 +101,27 @@ test("тело-не-объект (null, число) — 400, а не исклю�
     assert.ok(r instanceof Response, `${body}: исключение ${String(r)}`);
     assert.equal(r.status, 400, body);
   }
+});
+
+test("не больше 5 заявок за 10 минут с одного адреса, другой адрес не страдает", async () => {
+  const lead = { phone: "9775939739", text: "x" };
+  for (let i = 0; i < 5; i++) assert.equal((await post(lead, "203.0.113.7")).status, 200, `заявка ${i + 1}`);
+  const before = count();
+  const r = await post(lead, "203.0.113.7");
+  assert.equal(r.status, 429);
+  assert.deepEqual(await r.json(), { ok: false, error: "too_many" });
+  assert.equal(count(), before);
+  assert.equal((await post(lead, "203.0.113.8")).status, 200);
+});
+
+test("заполненная ловушка — бот получает «принято», а в базу и Telegram ничего не уходит", async () => {
+  const before = count();
+  const sent = g.__delivered!.length;
+  const r = await post({ phone: "9775939739", text: "x", hp: "http://spam.example" });
+  assert.equal(r.status, 200);
+  assert.deepEqual(await r.json(), { ok: true, id: 0 });
+  assert.equal(count(), before);
+  assert.equal(g.__delivered!.length, sent);
+  // Пустая ловушка — обычная заявка
+  assert.equal((await post({ phone: "9775939739", text: "x", hp: "" })).status, 200);
 });

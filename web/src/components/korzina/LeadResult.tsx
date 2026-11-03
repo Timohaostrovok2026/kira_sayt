@@ -6,7 +6,7 @@ import { useSite } from "@/lib/catalog-context";
 import { money } from "@/lib/format";
 import { copyText, telegramLink, whatsappLink } from "./lead";
 
-export type LeadResultData = { ok: true; id: number; text: string; total: number } | { ok: false; text: string; total: number };
+export type LeadResultData = { ok: true; id: number; text: string; total: number } | { ok: false; text: string; total: number; limited?: boolean };
 
 /** Мессенджеры с готовым текстом и звонок: WhatsApp в РФ работает плохо, звонок доходит всегда. */
 function Messengers({ text, place }: { text: string; place: string }) {
@@ -76,7 +76,10 @@ export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => voi
   return (
     <div className="sdone">
       <h1 className="display">Не получилось отправить</h1>
-      <p>Похоже, проблема со связью. Отправьте заявку в мессенджер — текст уже готов, ничего не потеряется.</p>
+      <p>
+        {r.limited ? "С вашего адреса только что ушло несколько заявок подряд." : "Похоже, проблема со связью."} Отправьте заявку в
+        мессенджер — текст уже готов, ничего не потеряется.
+      </p>
       <Messengers text={r.text} place="lead_fail" />
       <CopyButton text={r.text} />
       <details className="empty w-full text-left">
