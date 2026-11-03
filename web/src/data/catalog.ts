@@ -3,7 +3,7 @@
  * Сами данные живут в базе (см. src/lib/content), catalog.json — только начальное наполнение.
  * На сервере каталог берём через getCatalog(), в клиентских компонентах — useCatalog().
  */
-import { parseDatePrices, tableMin, type PriceTable } from "./date-prices.ts";
+import { parseDatePrices, splitCols, tableMin, withLonger, type LongerRule, type PriceTable } from "./date-prices.ts";
 
 export type Kind =
   | "Анимация"
@@ -110,6 +110,16 @@ export const SOUND_PRICE = 4500;
 
 /** Волшебное письмо (ответы Кирилла 6 и 17): до 2 писем — цена по дате, каждое следующее +2 000 ₽. Письмо — один ребёнок. */
 export const LETTER = { id: "p_letter", included: 2, add: 2000, max: 30 };
+
+/** Дед Мороз на 1 час = 30 минут × 1,6, вверх до сотни (раунды 30–31): в таблице только цены на 30 минут. */
+export const LONGER: Record<string, LongerRule> = { p_ded: { short: "30 мин", long: "1 час", k10: 16 } };
+
+/** Таблица цен программы со всеми вариантами (для Деда Мороза — ещё «1 час»). null — текст не разобрался. */
+export function programTable(id: string, text: string): PriceTable | null {
+  const t = parseDatePrices(text).table;
+  // Столбцы уже с длительностью («Стандарт, 1 час») — Кирилл вписал цены на час сам, не умножаем второй раз.
+  return t && LONGER[id] && !splitCols(t.cols) ? withLonger(t, LONGER[id]) : t;
+}
 
 /**
  * «Праздник на улице» зимой (раунд 33): +2 000 ₽ за каждый начатый час на каждого артиста, только новогодние программы.
@@ -316,7 +326,7 @@ export function buildCatalog(data: CatalogData): Catalog {
   };
   const anyItem = (id: string): AnyItem | undefined => allExtras[id] ?? allPrograms[id];
   const tableById: Record<string, PriceTable | null> = {};
-  for (const p of data.programs) if (p.datePrices?.trim()) tableById[p.id] = parseDatePrices(p.datePrices).table;
+  for (const p of data.programs) if (p.datePrices?.trim()) tableById[p.id] = programTable(p.id, p.datePrices);
 
   return {
     all: data,

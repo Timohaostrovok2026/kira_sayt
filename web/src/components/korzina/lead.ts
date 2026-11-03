@@ -101,7 +101,9 @@ export function buildLeadText(s: CartState, lines: CartLine[], total: number, ca
 
   const from = lines.some((l) => l.mode === "from");
   const manager = lines.some((l) => l.mode === "manager");
-  out.push("", `Итого ориентировочно: ${from ? "от " : ""}${money(total)}${manager ? " (цену части позиций укажет менеджер)" : ""}`);
+  // Всё «укажет менеджер» — не пишем «0 ₽».
+  if (manager && !total) out.push("", "Итого: стоимость укажет менеджер");
+  else out.push("", `Итого ориентировочно: ${from ? "от " : ""}${money(total)}${manager ? " (цену части позиций укажет менеджер)" : ""}`);
 
   const f = s.form;
   const info: string[] = [];

@@ -91,15 +91,19 @@ export function makeId(prefix: string, title: string, taken: Set<string>) {
 
 /* ---------- позиции каталога ---------- */
 
-export function cleanProgram(v: unknown, id: string, prev?: Program): Program {
+export function cleanProgram(v: unknown, id: string, prev?: Program, packages: Package[] = []): Program {
   const r = obj(v);
   const kind = str(r.kind) as Kind;
   if (!KINDS.some((k) => k.id === kind)) fail("Выберите вид программы");
   const cover = str(r.cover, 40);
   // Цены по датам: при таблице цена программы — её минимум («от» на карточке). Пустое поле стирает таблицу (...prev её бы оставил).
+  // Обрезка посреди строки дала бы неверную цену («16 1» → 161 ₽) — длинный текст не принимаем.
+  if (String(r.datePrices ?? "").length > 4000) fail("Цены по датам: слишком длинный текст");
   const datePrices = text(r.datePrices, 4000);
   let cost = price(r.price);
   if (datePrices) {
+    const inPack = packages.find((k) => k.items.some((it) => it.ref === id || it.alts?.includes(id)));
+    if (inPack) fail(`Цены по датам: программа есть в пакете «${inPack.name}» — уберите её из пакета, иначе цену пакета не посчитать`);
     const { table, errors } = parseDatePrices(datePrices);
     if (!table) fail(`Цены по датам: ${errors.slice(0, 3).join("; ")}`);
     else cost = tableMin(table);

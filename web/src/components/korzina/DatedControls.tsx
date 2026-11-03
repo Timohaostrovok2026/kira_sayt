@@ -1,7 +1,7 @@
 "use client";
 
 import { LETTER } from "@/data/catalog";
-import { splitCols } from "@/data/date-prices";
+import { OTHER_SLOT, splitCols } from "@/data/date-prices";
 import { useCart, type CartLine } from "@/lib/cart";
 import { money } from "@/lib/format";
 
@@ -78,6 +78,7 @@ export function DatedControls({ l }: { l: CartLine }) {
                 {d.windowPrices[i] != null ? ` · ${money(d.windowPrices[i]!)}` : ""}
               </option>
             ))}
+            {!d.nightOnly && <option value={OTHER_SLOT}>Другое время — цену укажет менеджер</option>}
           </select>
         </label>
       )}

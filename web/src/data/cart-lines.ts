@@ -1,6 +1,6 @@
 // Строки корзины и итог — чистые функции без React (тесты — cart-lines.test.ts). Состояние и хуки — в lib/cart.tsx.
 import { LETTER, MKAD_BASE, MKAD_PER_KM, OUTDOOR_PRICE, SOUND_PRICE, slotRef, type Catalog } from "./catalog.ts";
-import { priceFor, type PriceWindow } from "./date-prices.ts";
+import { OTHER_SLOT, priceFor, type PriceWindow } from "./date-prices.ts";
 import { plural } from "../lib/format.ts";
 
 export interface CartPackage {
@@ -73,6 +73,13 @@ export interface CartLine {
   dated?: DatedInfo;
 }
 
+/** Окно в подписи и в заявке: ночные — «ночь на 1 января, 01:00–04:00», чтобы менеджер не перепутал ночь. */
+function slotLabel(slot: string | undefined, windows: PriceWindow[]) {
+  if (!slot) return "";
+  if (slot === OTHER_SLOT) return "другое время";
+  return windows.find((w) => w.label === slot)?.night ? `ночь на 1 января, ${slot}` : slot;
+}
+
 /** Число писем: целое от 1 до LETTER.max, по умолчанию 1 (ответ 17: «сколько детей»). */
 export function letterCount(q: unknown) {
   return typeof q === "number" && Number.isInteger(q) ? Math.min(LETTER.max, Math.max(1, q)) : 1;
@@ -100,7 +107,7 @@ export function buildLines(s: CartState, cat: Catalog): CartLine[] {
         const letters = id === LETTER.id ? letterCount(o.qty) : undefined;
         let price = r.price;
         if (letters && r.mode !== "manager") price += Math.max(0, letters - LETTER.included) * LETTER.add;
-        const parts = [t.cols.length > 1 ? t.cols[r.col] : "", r.slot ?? "", letters ? `${letters} ${plural(letters, "письмо", "письма", "писем")}` : ""];
+        const parts = [t.cols.length > 1 ? t.cols[r.col] : "", slotLabel(r.slot, r.windows), letters ? `${letters} ${plural(letters, "письмо", "письма", "писем")}` : ""];
         Object.assign(line, {
           price,
           subtitle: parts.filter(Boolean).join(" · ") || p.kind,

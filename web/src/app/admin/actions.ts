@@ -51,7 +51,7 @@ export async function saveItem(c: Coll, id: string | null, input: unknown): Prom
 
     let item: { id: string };
     const patch: Partial<Record<keyof CatalogData, unknown>> = {};
-    if (key === "programs") item = cleanProgram(input, newId, prev as never);
+    if (key === "programs") item = cleanProgram(input, newId, prev as never, catalog.packages);
     else if (key === "extras") item = cleanExtra(input, newId, prev as never);
     else if (key === "packages") item = cleanPackage(input, newId, catalog, prev as never);
     else {

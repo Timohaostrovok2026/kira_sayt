@@ -113,7 +113,7 @@ test("новогодние цены: таблица и price = минимум; �
   const out = nyMig.apply(c).programs!;
   const by = Object.fromEntries(out.map((p) => [p.id, p]));
   assert.deepEqual(["p_ded", "p_letter", "p_grinch1", "p_grinch2", "p_yaga"].map((id) => by[id].price), [11000, 11000, 14300, 40300, 9900]);
-  assert.ok(by.p_ded.datePrices!.startsWith("Даты | Стандарт, 30 мин"));
+  assert.ok(by.p_ded.datePrices!.startsWith("Даты | Стандарт | Премиум"), "у Деда Мороза — цены на 30 минут, 1 час сайт считает сам");
   assert.equal(by.p_ded.dur, "30 минут или 1 час");
   assert.deepEqual(by.p_video, c.programs[5], "видео-поздравление не тронуто");
   assert.equal(by.p_grinch1.inc, "старое", "остальные поля не тронуты");

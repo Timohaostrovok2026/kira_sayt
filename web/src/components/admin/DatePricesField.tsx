@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
+import { LONGER, programTable } from "@/data/catalog";
 import { parseDatePrices, rowDates, tableMin } from "@/data/date-prices";
 import { money } from "@/lib/format";
 import { Field, Textarea } from "./ui";
@@ -14,9 +15,11 @@ const HINT = (
 );
 
 /** «Цены по датам» в редакторе программы: текст-таблица и сразу под ним — как её понял сайт или где ошибка. */
-export function DatePricesField({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+export function DatePricesField({ id, value, onChange }: { id: string | null; value: string; onChange: (v: string) => void }) {
   const parsed = useMemo(() => (value.trim() ? parseDatePrices(value) : null), [value]);
-  const t = parsed?.table;
+  // Как на сайте: у Деда Мороза к ценам на 30 минут добавляется «1 час» (×1,6, вверх до сотни).
+  const t = parsed?.table && id ? programTable(id, value) : parsed?.table;
+  const longer = id ? LONGER[id] : undefined;
   return (
     <Field label="Цены по датам" hint={HINT}>
       <Textarea value={value} onChange={onChange} rows={4} className="font-mono text-[14px]" spellCheck={false} />
@@ -31,7 +34,10 @@ export function DatePricesField({ value, onChange }: { value: string; onChange: 
       )}
       {t && (
         <span className="mt-2 block overflow-x-auto text-[13px]">
-          <span className="mb-1 block text-ink-soft">На сайте: от {money(tableMin(t))}. Так поймёт таблицу сайт:</span>
+          <span className="mb-1 block text-ink-soft">
+            На сайте: от {money(tableMin(t))}. Так поймёт таблицу сайт
+            {longer ? ` (цены «${longer.long}» сайт считает сам: ${longer.short} × ${longer.k10 / 10}, вверх до сотни)` : ""}:
+          </span>
           <table className="w-full border-collapse">
             <thead>
               <tr>

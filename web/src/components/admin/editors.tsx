@@ -161,7 +161,7 @@ export function ProgramEditor({ id, onClose }: { id: string | null; onClose: () 
       <Field label="Что входит" hint="Каждый пункт с новой строки">
         <Textarea value={d.inc ?? ""} onChange={(v) => ed.set({ inc: v })} rows={6} />
       </Field>
-      {(d.kind === "Новый год" || d.datePrices?.trim()) && <DatePricesField value={d.datePrices ?? ""} onChange={(v) => ed.set({ datePrices: v })} />}
+      {(d.kind === "Новый год" || d.datePrices?.trim()) && <DatePricesField id={id} value={d.datePrices ?? ""} onChange={(v) => ed.set({ datePrices: v })} />}
       <CoverPicker costumes={data.catalog.costumes} value={d.cover} img={cat.costumeImg} onPick={(c) => ed.set({ cover: c })} disabled={!!d.photo} />
       <PhotoField
         label="Или своё фото программы"

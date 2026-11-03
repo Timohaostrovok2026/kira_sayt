@@ -1,13 +1,13 @@
 // Новогодние цены по датам (вариант А, раунды 29–33): разбор таблицы Кирилла и цена по дате, варианту и окну времени.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { parseDatePrices, priceFor, rowDates, splitCols, tableMin, type PriceTable } from "./date-prices.ts";
+import { OTHER_SLOT, parseDatePrices, priceFor, rowDates, splitCols, tableMin, type PriceTable } from "./date-prices.ts";
 import { NY_DATE_PRICES } from "./migrations.ts";
+import { programTable } from "./catalog.ts";
 
 const table = (id: string): PriceTable => {
-  const { table: t, errors } = parseDatePrices(NY_DATE_PRICES[id]);
-  assert.deepEqual(errors, [], id);
-  return t!;
+  assert.deepEqual(parseDatePrices(NY_DATE_PRICES[id]).errors, [], id);
+  return programTable(id, NY_DATE_PRICES[id])!;
 };
 const ded = table("p_ded");
 const grinch = table("p_grinch1");
@@ -83,7 +83,17 @@ test("Стандарт после 22.12 недоступен — считаем 
   assert.equal(at(ded, "2026-12-22", S30).note, undefined, "22.12 Стандарт ещё есть");
 });
 
-test("Дед Мороз на 1 час — весь столбец по таблице Кирилла (×1,6 вверх до сотни)", () => {
+test("Дед Мороз: в таблице Кирилла только 30 минут, 1 час сайт добавляет сам", () => {
+  assert.deepEqual(parseDatePrices(NY_DATE_PRICES.p_ded).table!.cols, ["Стандарт", "Премиум"]);
+  assert.deepEqual(ded.cols, [S30, P30, S60, P60]);
+  // Кирилл поднял цену на 30 минут — цена на час пересчиталась.
+  const t = programTable("p_ded", "Даты | Стандарт | Премиум\n1.12–13.12 | 12 000 | 16 150")!;
+  assert.deepEqual(t.rows[0].cells, [12000, 16150, 19200, 25900]);
+  const own = programTable("p_ded", "Даты | Стандарт, 30 мин | Стандарт, 1 час\n1.12–13.12 | 11 000 | 18 000")!;
+  assert.deepEqual([own.cols.length, own.rows[0].cells[1]], [2, 18000], "часы вписаны сами — не умножаем");
+});
+
+test("Дед Мороз на 1 час — весь столбец совпадает с таблицей из разбора (×1,6 вверх до сотни)", () => {
   const p60 = ["2026-12-05", "2026-12-15", "2026-12-20", "2026-12-25", "2026-12-29", "2027-01-03"].map((d) => at(ded, d, P60).price);
   assert.deepEqual(p60, [25800, 33200, 40500, 44200, 47900, 31300]);
   const s60 = ["2026-12-05", "2026-12-15", "2026-12-20"].map((d) => at(ded, d, S60).price);
@@ -103,6 +113,8 @@ test("31.12 без времени — «от» по окнам дня и спи�
   assert.deepEqual(r.windows.map((w) => w.label), ["06:00–12:59", "13:00–15:59", "16:00–18:59", "19:00–22:59", "23:00–00:59", "01:00–04:00"]);
   assert.deepEqual(r.windows.map((w) => w.night), [false, false, false, false, true, true]);
   assert.equal(at(ded, "2026-12-31", S30).price, 28750, "Стандарта 31.12 нет — «от» по Премиуму");
+  const h = at(ded, "2026-12-31", S60);
+  assert.deepEqual([h.price, ded.cols[h.col]], [46000, P60], "Стандарт на 1 час 31.12 без времени — «от» по Премиуму на 1 час, не на 30 минут");
   assert.equal(at(grinch, "2026-12-31").price, 26400);
 });
 
@@ -115,6 +127,13 @@ test("31.12 по окну: каждое окно и 1 час", () => {
   assert.equal(at(ded, "2026-12-31", P30, "10:00–11:00").mode, "from", "неизвестное окно — как не выбрано");
 });
 
+test("31.12 «Другое время» (Баба Яга в 06:30, Дед Мороз в 05:00) — «укажет менеджер»; на 1.01 так не работает", () => {
+  const r = at(table("p_yaga"), "2026-12-31", undefined, OTHER_SLOT);
+  assert.deepEqual([r.mode, r.price, r.slot], ["manager", 0, OTHER_SLOT]);
+  assert.equal(at(ded, "2026-12-31", P30, OTHER_SLOT).mode, "manager");
+  assert.equal(at(ded, "2026-12-10", P30, OTHER_SLOT).price, 16100, "дата без окон — пункт ни на что не влияет");
+});
+
 test("1 января: только ночные окна; днём — «укажет менеджер»", () => {
   const r = at(ded, "2027-01-01", P30);
   assert.equal(r.mode, "manager");
@@ -124,6 +143,11 @@ test("1 января: только ночные окна; днём — «ука�
   assert.equal(at(ded, "2027-01-01", P30, "06:00–12:59").mode, "manager", "дневное окно 31.12 на 1.01 не действует");
   assert.equal(at(grinch, "2027-01-01", undefined, "23:00–00:59").price, 57200);
   assert.equal(at(grinch, "2027-01-01").mode, "manager");
+});
+
+test("ночные окна последнего дня короткого месяца находятся на следующий день", () => {
+  const ok = parseDatePrices("Даты | Цена\n30.11 20:00–22:59 | 1 000\n30.11 23:00–00:59 | 2 000").table!;
+  assert.equal(priceFor(ok, { date: "2026-12-01", slot: "23:00–00:59" }).price, 2000);
 });
 
 test("подписи дат строк", () => {

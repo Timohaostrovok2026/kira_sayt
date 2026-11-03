@@ -8,8 +8,9 @@ import { copyText, telegramLink, whatsappLink } from "./lead";
 import { Fold } from "@/components/Fold";
 import { Back, Chevron } from "@/components/Arrows";
 
-/** from — в итоге были цены «от» (новогодние без даты). */
-export type LeadResultData = { ok: true; id: number; text: string; total: number; from?: boolean } | { ok: false; text: string; total: number; from?: boolean; limited?: boolean };
+/** from — в итоге были цены «от» (новогодние без даты), manager — цену части позиций укажет менеджер. */
+type Approx = { from?: boolean; manager?: boolean };
+export type LeadResultData = ({ ok: true; id: number; text: string; total: number } | { ok: false; text: string; total: number; limited?: boolean }) & Approx;
 
 /** Мессенджеры с готовым текстом и звонок: WhatsApp в РФ работает плохо, звонок доходит всегда. */
 function Messengers({ text, place }: { text: string; place: string }) {
@@ -63,7 +64,8 @@ export function LeadResult({ r, onBack }: { r: LeadResultData; onBack: () => voi
           {r.total > 0 && (
             <>
               {" "}
-              Ориентировочно <b className="num">{r.from ? "от " : ""}{money(r.total)}</b>.
+              Ориентировочно <b className="num">{r.from ? "от " : ""}{money(r.total)}</b>
+              {r.manager ? ", цену части позиций укажет менеджер" : ""}.
             </>
           )}
         </p>

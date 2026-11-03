@@ -192,6 +192,26 @@ export function parseDatePrices(text: string): { table: PriceTable | null; error
   return { table: { cols, rows: rows.map(({ from, to, window, cells }) => ({ from, to, window, cells })), notes }, errors };
 }
 
+/** Длинный вариант по правилу: «1 час = 30 минут × 1,6, вверх до сотни» (Кирилл, раунды 30–31). k10 — множитель × 10. */
+export interface LongerRule {
+  short: string;
+  long: string;
+  k10: number;
+}
+
+/**
+ * Добавляет к каждому столбцу длинный вариант: «Стандарт» → «Стандарт, 30 мин» и «Стандарт, 1 час».
+ * Кирилл правит только цены на 30 минут — цены на час пересчитываются сами.
+ */
+export function withLonger(t: PriceTable, r: LongerRule): PriceTable {
+  const up = (c: number | null) => (c == null ? null : Math.ceil((c * r.k10) / 1000) * 100);
+  return {
+    ...t,
+    cols: [...t.cols.map((c) => `${c}, ${r.short}`), ...t.cols.map((c) => `${c}, ${r.long}`)],
+    rows: t.rows.map((row) => ({ ...row, cells: [...row.cells, ...row.cells.map(up)] })),
+  };
+}
+
 /** Наименьшая цена таблицы — для «от» на карточке и поля price программы. */
 export function tableMin(t: PriceTable, col?: number) {
   let min = Infinity;
@@ -224,6 +244,9 @@ export function splitCols(cols: string[]): { a: string[]; b: string[] } | null {
 
 export type PriceMode = "exact" | "from" | "manager";
 
+/** Пункт «Другое время» в списке окон: время вне таблицы (Баба Яга 31.12 до 07:00) — цену укажет менеджер. */
+export const OTHER_SLOT = "other";
+
 export interface PriceResult {
   mode: PriceMode;
   /** Для «от» — нижняя граница, для «укажет менеджер» — 0. */
@@ -245,6 +268,36 @@ export interface PriceResult {
  * Цена позиции по таблице, дате из заявки (ISO), выбранному столбцу и окну времени.
  * Нет даты — «от» по выбранному столбцу; дата вне таблицы — «укажет менеджер».
  */
+/** Предыдущий день сезона: 1.12 → 30.11 (у месяцев в seasonDay по 31 «дню»). */
+function prevDay(n: number) {
+  const { d, m } = dayMonth(n);
+  if (d > 1) return n - 1;
+  const pm = m === 1 ? 12 : m - 1;
+  return seasonDay(MONTH_DAYS[pm - 1], pm);
+}
+
+/**
+ * Столбец для расчёта: выбранный, если на эти строки он есть; иначе доступный той же длительности
+ * (Стандарт, 1 час → Премиум, 1 час), иначе первый доступный. off — столбцы, которых нет ни в одной строке.
+ */
+function pickCol(t: PriceTable, rows: PriceRow[], want: number) {
+  const has = (i: number) => rows.some((r) => r.cells[i] != null);
+  const off = t.cols.map((_, i) => i).filter((i) => !has(i));
+  if (has(want)) return { col: want, off, swapped: false };
+  const dur = (i: number) => t.cols[i].split(/\s*,\s*/)[1];
+  const same = splitCols(t.cols) ? t.cols.findIndex((_, i) => has(i) && dur(i) === dur(want)) : -1;
+  return { col: same >= 0 ? same : t.cols.findIndex((_, i) => has(i)), off, swapped: true };
+}
+
+/** «На эту дату — только Премиум»: имя варианта без длительности. */
+function onlyNote(t: PriceTable, col: number) {
+  return `На эту дату — только ${splitCols(t.cols) ? t.cols[col].split(/\s*,\s*/)[0] : t.cols[col]}`;
+}
+
+/**
+ * Цена позиции по таблице, дате из заявки (ISO), выбранному столбцу и окну времени.
+ * Нет даты — «от» по выбранному столбцу; дата вне таблицы — «укажет менеджер».
+ */
 export function priceFor(t: PriceTable, opt: { col?: string; date?: string; slot?: string }): PriceResult {
   const want = Math.max(0, opt.col ? t.cols.indexOf(opt.col) : 0);
   const day = opt.date ? isoSeasonDay(opt.date) : null;
@@ -257,35 +310,25 @@ export function priceFor(t: PriceTable, opt: { col?: string; date?: string; slot
 
   // Окна этой даты и ночные окна прошлой (ночь на 1 января при дате 1.01).
   const own = t.rows.filter((r) => r.window && r.from === day);
-  const night = t.rows.filter((r) => r.window?.night && r.from === day - 1);
+  const night = t.rows.filter((r) => r.window?.night && r.from === prevDay(day));
   const timed = own.length ? own : night;
   const windows = timed.map((r) => r.window!);
+  const nightOnly = night.length > 0 && !own.length;
   const chosen = timed.find((r) => r.window!.label === opt.slot);
 
   let row: PriceRow | undefined;
   if (chosen) row = chosen;
+  else if (own.length && opt.slot === OTHER_SLOT) return { ...base, windows, slot: OTHER_SLOT, mode: "manager", price: 0, note: "Цену укажет менеджер" };
   else if (own.length) {
-    // Дата с окнами, время не выбрано — «от» по окнам этого дня (выбранного варианта, если он есть).
-    const pick = (cs: (number | null)[]) => cs[want] ?? null;
-    const vals = own.map((r) => pick(r.cells)).filter((x): x is number => x != null);
-    const all = own.flatMap((r) => r.cells).filter((x): x is number => x != null);
-    const off = t.cols.map((_, i) => i).filter((i) => own.every((r) => r.cells[i] == null));
-    const col = vals.length ? want : t.cols.findIndex((_, i) => !off.includes(i));
-    return { col, off, windows, mode: "from", price: Math.min(...(vals.length ? vals : all)), note: "Выберите время приезда" };
+    // Дата с окнами, время не выбрано — «от» по окнам этого дня, по выбранному варианту (или той же длительности).
+    const { col, off } = pickCol(t, own, want);
+    const vals = own.map((r) => r.cells[col]).filter((x): x is number => x != null);
+    return { col, off, windows, mode: "from", price: Math.min(...vals), note: "Выберите время приезда" };
   } else row = t.rows.find((r) => !r.window && r.from <= day && day <= r.to);
 
-  if (!row) return { ...base, windows, nightOnly: night.length > 0 && !own.length, mode: "manager", price: 0, note: "Цену укажет менеджер" };
+  if (!row) return { ...base, windows, nightOnly, mode: "manager", price: 0, note: "Цену укажет менеджер" };
 
-  const off = t.cols.map((_, i) => i).filter((i) => row.cells[i] == null);
-  let col = want;
-  let note: string | undefined;
-  if (row.cells[want] == null) {
-    // Варианта на эту дату нет (Стандарт после 22.12) — считаем доступный, с той же длительностью, если можно.
-    const sp = splitCols(t.cols);
-    const same = sp ? t.cols.findIndex((c, i) => row.cells[i] != null && c.split(/\s*,\s*/)[1] === t.cols[want].split(/\s*,\s*/)[1]) : -1;
-    col = same >= 0 ? same : row.cells.findIndex((c) => c != null);
-    const name = sp ? t.cols[col].split(/\s*,\s*/)[0] : t.cols[col];
-    note = `На эту дату — только ${name}`;
-  }
-  return { col, off, windows, slot: chosen?.window!.label, nightOnly: night.length > 0 && !own.length, mode: "exact", price: row.cells[col]!, note };
+  // Варианта на эту дату нет (Стандарт после 22.12) — считаем доступный той же длительности, с пометкой.
+  const { col, off, swapped } = pickCol(t, [row], want);
+  return { col, off, windows, slot: chosen?.window!.label, nightOnly, mode: "exact", price: row.cells[col]!, note: swapped ? onlyNote(t, col) : undefined };
 }

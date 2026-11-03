@@ -180,20 +180,20 @@ export function CartView() {
       if (r.status === 429) {
         track("lead_fail", { total, reason: "limit" });
         flushNow();
-        setResult({ ok: false, text, total, from: approx.from, limited: true });
+        setResult({ ok: false, text, total, from: approx.from, manager: approx.manager, limited: true });
         return;
       }
       if (!r.ok || !j?.ok || typeof j.id !== "number") throw new Error("lead_failed");
       track("lead_ok", { id: j.id });
       flushNow();
-      setResult({ ok: true, id: j.id, text, total, from: approx.from });
+      setResult({ ok: true, id: j.id, text, total, from: approx.from, manager: approx.manager });
       setGone([]);
       // Экран успеха рисуется из result, поэтому корзину можно чистить сразу.
       clear();
     } catch {
       track("lead_fail", { total });
       flushNow();
-      setResult({ ok: false, text, total, from: approx.from });
+      setResult({ ok: false, text, total, from: approx.from, manager: approx.manager });
     } finally {
       clearTimeout(timer);
       setSending(false);
